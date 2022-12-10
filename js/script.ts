@@ -46,7 +46,11 @@ function setTab(element: HTMLSpanElement, tabName: string) {
         let tab = i as HTMLSpanElement
         tab.style.display = "none"
     }
-    document.getElementById
+    var selected = document.getElementById(tabName)
+    if (selected == null) {
+        return
+    }
+    selected.style.display = "block"
 }
 
 function format(value: number): string {
@@ -118,7 +122,7 @@ function applyIncome(): void {
 }
 
 function progressTime(): void {
-    day += applySpeed(0.608)
+    day += applySpeed(365/900)
 }
 
 function applyScience(): void {

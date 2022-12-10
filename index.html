@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
     <link rel="stylesheet" href="css/styles.css"> 
+    <link rel="stylesheet" href="css/dark.css"> 
     <title>Perpetual War</title>
 </head>
 <body id="body" class="dark">
@@ -12,7 +13,7 @@
         <h1> Perpetual War </h1>
         <div style="width: 1220px; height: 600px"> 
             <div class="panel w3-padding" style="width: 300px; height: auto; float: left">
-                <div id="timeDisplay">
+                <div id="timeDisplay", style="margin-bottom: 0.5em;">
                     <div id="year" style="font-size: large;"></div>
                     <div id="day" style="color: rgb(175,175,175)"></div>
                 </div>
@@ -33,18 +34,28 @@
                 </div>
 
             </div>
-            <div class="panel w3-margin-left" id="tabButtons" style="width: 900px; height: 40px; float: left">
-                <div class="w3-button w3-bar-item" id="economyTabButton" onclick="setTab(this, 'jobs')">Economy</div>
-                <div class="w3-button w3-bar-item" id="militaryTabButton" onclick="setTab(this, 'jobs')">Military</div>
-                <div class="w3-button w3-bar-item" id="battlegroundsTabButton" onclick="setTab(this, 'jobs')">Battlegrounds</div>
-                <div class="w3-button w3-bar-item" id="prestigeTabButton" onclick="setTab(this, 'jobs')" style="display: none";>Prestige</div>
+            <div class="panel w3-margin-left" id="tabButtons" style="width: 800px; height: 40px; float: left">
+                <div class="w3-button w3-bar-item" onclick="setTab(this, 'economy')">Economy</div>
+                <div class="w3-button w3-bar-item" onclick="setTab(this, 'military')">Military</div>
+                <div class="w3-button w3-bar-item" onclick="setTab(this, 'battlegrounds')">Battlegrounds</div>
+                <div class="w3-button w3-bar-item" onclick="setTab(this, 'prestige')" style="display: none";>Prestige</div>
+                <div class="w3-button w3-bar-item" onclick="setTab(this, 'prestige')" style="float: right">Settings</div>
             </div>
-            <div class="panel w3-margin-left w3-margin-top tabs" id="tabs" style="width: 900px; height: 40px; float: left"></div>
-            <div class="tab" id="battlegrounds" style="display: none">
-                <canvas>
+            <div class="panel w3-margin-left w3-margin-top tabs" id="tabs" style="width: 800px; height: auto; float: left">
+                <div class="tab" id="economy">
+                    test
+                </div>
+                <div class="tab" id="military" style="display: none;">
+                    test
+                </div>
+                <div class="tab" id="battlegrounds" style="display: none">
+                    <canvas> </canvas>
+                </div>
+                <div class="tab" id="prestige" style="display: none">
+                    test
+                </div>
+            </div>
 
-                </canvas>
-            </div>
         </div>
     </div>
 </body>
