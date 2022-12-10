@@ -10,28 +10,41 @@
 <body id="body" class="dark">
     <div class="w3-margin">
         <h1> Perpetual War </h1>
-        <div class="panel w3-padding" style="width: 300px; height: auto; float: left">
-            <span style="color:gray ">Resources</span>
-            <div style="font-size: large" id = "resourceDisplay">
-                <span></span>
-                <span></span>
-                <span></span>
-                <span></span>
-            </div>
-            <span style="color:gray"> Science </span>
-            <div style="font-size: large" id = "scienceDisplay">
-                <span id="science" style="color:cornflowerblue">27</span>
-            </div>
-            <span style="color:gray">Population</span>
-            <div style="font-size: large" id="populationDisplay">
-                <span id="population" style="color:rgb(191, 158, 116)">14</span>
-            </div>
+        <div style="width: 1220px; height: 600px"> 
+            <div class="panel w3-padding" style="width: 300px; height: auto; float: left">
+                <div id="timeDisplay">
+                    <div id="year" style="font-size: large;"></div>
+                    <div id="day" style="color: rgb(175,175,175)"></div>
+                </div>
+                <span style="color:gray ">Resources</span>
+                <div style="font-size: large" id = "resourceDisplay">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+                <span style="color:gray"> Science </span>
+                <div style="font-size: large" id = "scienceDisplay">
+                    <span id="science" style="color:cornflowerblue">27</span>
+                </div>
+                <span style="color:gray">Population</span>
+                <div style="font-size: large" id="populationDisplay">
+                    <span id="population" style="color:rgb(191, 158, 116)">14</span>
+                </div>
 
-        </div>
-        <div class="w3-margin-left" style="float:left">
-            <canvas>
+            </div>
+            <div class="panel w3-margin-left" id="tabButtons" style="width: 900px; height: 40px; float: left">
+                <div class="w3-button w3-bar-item" id="economyTabButton" onclick="setTab(this, 'jobs')">Economy</div>
+                <div class="w3-button w3-bar-item" id="militaryTabButton" onclick="setTab(this, 'jobs')">Military</div>
+                <div class="w3-button w3-bar-item" id="battlegroundsTabButton" onclick="setTab(this, 'jobs')">Battlegrounds</div>
+                <div class="w3-button w3-bar-item" id="prestigeTabButton" onclick="setTab(this, 'jobs')" style="display: none";>Prestige</div>
+            </div>
+            <div class="panel w3-margin-left w3-margin-top tabs" id="tabs" style="width: 900px; height: 40px; float: left"></div>
+            <div class="tab" id="battlegrounds" style="display: none">
+                <canvas>
 
-            </canvas>
+                </canvas>
+            </div>
         </div>
     </div>
 </body>

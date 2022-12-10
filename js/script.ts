@@ -8,8 +8,9 @@ var player = {
     research: {} 
 }
 
+var day = 1
 const updateSpeed = 20
-const baseGameSpeed = 4
+const baseGameSpeed = 1
 
 const units = ["", "k", "M", "B", "T", "q", "Q", "Sx", "Sp", "Oc"];
 
@@ -17,11 +18,13 @@ const income = 1;
 
 function update(): void {
     applyIncome()
+    progressTime()
     updateText()
 }
 
 function updateText(): void {
-    formatResources(player.resources)
+    setResourceDisplay(player.resources)
+    setTimeDisplay(player.resources)
     setDisplay("science", format(player.science))
     setDisplay("population", format(player.population))
 }
@@ -34,16 +37,31 @@ function setDisplay(elementID: string, text: string): void {
     elementHTML.textContent = text
 }
 
+function setTab(element: HTMLSpanElement, tabName: string) {
+    var tabsHTML = document.getElementById("tabs")
+    if (tabsHTML == null) {
+        return
+    }
+    for (let i of tabsHTML.children) {
+        let tab = i as HTMLSpanElement
+        tab.style.display = "none"
+    }
+    document.getElementById
+}
+
 function format(value: number): string {
+    if (value <= 0) {
+        return Math.floor(value).toString()
+    }
     var tier = Math.log10(value) / 3 | 0 // bitwise or turns it into an int
     if (tier == 0) {
-        return value.toString()
+        return Math.floor(value).toString()
     }
     var suffix = units[tier]
     return (value / Math.pow(10, tier*3)).toFixed(1) + suffix
 }
 
-function formatResources(resources: number): void {
+function setResourceDisplay(resources: number): void {
     var resourceHTML = document.getElementById("resourceDisplay")
     if (resourceHTML == null) {
         return
@@ -67,6 +85,19 @@ function formatResources(resources: number): void {
     }
 }
 
+function setTimeDisplay(time: number): void {
+    var yearHTML = document.getElementById("year") as HTMLSpanElement
+    var dayHTML = document.getElementById("day") as HTMLSpanElement
+    if (yearHTML == null) {
+        return
+    }
+    if (dayHTML == null) {
+        return
+    }
+    yearHTML.textContent = `Year ${format(day / 365 + 1)}`
+    dayHTML.textContent = `Day ${format(day % 365)}`
+}
+
 function applyMultipliers(value: number, multipliers: number[]): number {
     for (let m of multipliers) {
         value *= m
@@ -74,12 +105,20 @@ function applyMultipliers(value: number, multipliers: number[]): number {
     return value
 }
 
+function getSpeed(): number {
+    return baseGameSpeed
+}
+
 function applySpeed(value: number): number {
-    return value / updateSpeed
+    return value / updateSpeed * getSpeed()
 }
 
 function applyIncome(): void {
     player.resources += applySpeed(income)
+}
+
+function progressTime(): void {
+    day += applySpeed(0.608)
 }
 
 function applyScience(): void {
@@ -92,4 +131,3 @@ var canvas = document.querySelector('canvas') as HTMLCanvasElement
 var c = canvas.getContext('2d')
 canvas.width = 800
 canvas.height = 500
-
