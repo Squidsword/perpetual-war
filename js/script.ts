@@ -38,19 +38,32 @@ function setDisplay(elementID: string, text: string): void {
 }
 
 function setTab(element: HTMLSpanElement, tabName: string) {
+    var tabButtonsHTML = document.getElementById("tabButtons")
     var tabsHTML = document.getElementById("tabs")
+    var selected = document.getElementById(tabName)
     if (tabsHTML == null) {
         return
     }
+    if (tabButtonsHTML == null) {
+        return
+    }
+    if (selected == null) {
+        return
+    }
+
+    for (let i of tabButtonsHTML.children) {
+        let tabButton = i as HTMLSpanElement
+        tabButton.classList.remove("w3-blue-gray")
+6    }
+
     for (let i of tabsHTML.children) {
         let tab = i as HTMLSpanElement
         tab.style.display = "none"
     }
-    var selected = document.getElementById(tabName)
-    if (selected == null) {
-        return
-    }
+    
+    element.classList.add("w3-blue-gray")
     selected.style.display = "block"
+    
 }
 
 function format(value: number): string {
