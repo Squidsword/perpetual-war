@@ -11,10 +11,6 @@ td {
     vertical-align: middle !important;
 }
 
-.current {
-    background-color: orange !important;
-}
-
 .progress-text {
     position: absolute;
     top: 0px;
@@ -25,14 +21,18 @@ td {
 
 .progress-bar {
     position: relative;
-    background-color: rgb(12, 101, 173);
+    background-color: rgb(40, 40, 40);
     cursor: pointer;
     width: 200px;
 }
 
 .progress-fill {
     height: 30px;
-    background-color: rgb(46, 148, 231)
+    background-color: rgb(149, 192, 192)
+}
+
+.current {
+    background-color: rgb(192, 149, 192) !important
 }
 
 .hidden {

@@ -17,42 +17,76 @@
                     <div id="year" style="font-size: large;"></div>
                     <div id="day" style="color: rgb(175,175,175)"></div>
                 </div>
-                <span style="color:gray ">Resources</span>
-                <div style="font-size: large" id = "resourceDisplay">
-                    <span></span>
-                    <span></span>
-                    <span></span>
-                    <span></span>
+                <span style="color:gray">Population</span>
+                <div style="font-size: large" id="populationDisplay">
+                    <span id="population" style="color:rgb(191, 158, 116)">14</span>
+                </div>
+                <div id = "resourcesDisplay">
+                    <span style="color:gray ">Resources</span>
+                    <div style="font-size: large" id="resources">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                    </div>
                 </div>
                 <span style="color:gray"> Science </span>
                 <div style="font-size: large" id = "scienceDisplay">
                     <span id="science" style="color:cornflowerblue">27</span>
                 </div>
-                <span style="color:gray">Population</span>
-                <div style="font-size: large" id="populationDisplay">
-                    <span id="population" style="color:rgb(191, 158, 116)">14</span>
-                </div>
 
             </div>
             <div class="panel w3-margin-left" id="tabButtons" style="width: 800px; height: 40px; float: left">
                 <div class="w3-button w3-bar-item" onclick="setTab(this, 'economy')">Economy</div>
+                <div class="w3-button w3-bar-item" onclick="setTab(this, 'technology')">Technology</div>
                 <div class="w3-button w3-bar-item" onclick="setTab(this, 'military')">Military</div>
                 <div class="w3-button w3-bar-item" onclick="setTab(this, 'battlegrounds')">Battlegrounds</div>
-                <div class="w3-button w3-bar-item" onclick="setTab(this, 'prestige')" style="display: none";>Prestige</div>
-                <div class="w3-button w3-bar-item" onclick="setTab(this, 'prestige')" style="float: right">Settings</div>
+                <div class="w3-button w3-bar-item" onclick="setTab(this, 'prestige')">Prestige</div>
+                <div class="w3-button w3-bar-item" onclick="setTab(this, 'settings')" style="float: right">Settings</div>
             </div>
-            <div class="panel w3-margin-left w3-margin-top tabs" id="tabs" style="width: 800px; height: auto; float: left">
+            <div class="panel w3-margin-left w3-margin-top w3-padding" id="tabs" style="width: 800px; height: auto; float: left">
                 <div class="tab" id="economy">
-                    test
+                    <table id="economyTable" class="w3-table w3-bordered">
+                        <tr style="background-color:rgb(38, 136, 38)">
+                            <th class="category headerrow"> Sustainability </th>
+                            <th> Expansions </th>
+                            <th> Progress </th>
+                            <th> Remaining </th>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div class="progress-bar progressBar tooltip">  
+                                    <div class="progress-fill progressFill" style="width: 10%;"> </div>
+                                    <span class="progress-text name"> Fields </span>
+                                </div>
+                            </td>
+                            <td class="level"> 0 </td>
+                            <td class="xpGain"> 100 </td>
+                            <td class="xpLeft"> 1k </td>
+                        </tr>
+                        <tr>
+
+                        </tr>
+                    </table>
+                </div>
+                <div class="tab" id="technology" style="display: none;">
+                    <table id="technologyTable" class="w3-table w3-bordered">
+
+                    </table>
                 </div>
                 <div class="tab" id="military" style="display: none;">
-                    test
+                    <table id="militaryTable" class="w3-table w3-bordered">
+
+                    </table>
                 </div>
                 <div class="tab" id="battlegrounds" style="display: none">
                     <canvas> </canvas>
                 </div>
                 <div class="tab" id="prestige" style="display: none">
-                    test
+                    prestige
+                </div>
+                <div class="tab" id="settings" style="display: none">
+                    settings
                 </div>
             </div>
 

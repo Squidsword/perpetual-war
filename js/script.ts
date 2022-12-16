@@ -1,10 +1,7 @@
 var player = {
     resources: 1,
     science: 0,
-    population: 0,
-    infantry: 0,
-    archers: 0,
-    cavalry: 0,
+    population: 1,
     research: {} 
 }
 
@@ -79,7 +76,7 @@ function format(value: number): string {
 }
 
 function setResourceDisplay(resources: number): void {
-    var resourceHTML = document.getElementById("resourceDisplay")
+    var resourceHTML = document.getElementById("resources")
     if (resourceHTML == null) {
         return
     }
