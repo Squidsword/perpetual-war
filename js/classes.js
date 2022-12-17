@@ -73,7 +73,7 @@ class TraitObject extends GameObject {
         TraitObject.traitObjects[this.type] = this;
     }
     getEffect() {
-        return this.effect(this.level);
+        return applyMultipliers(this.effect(this.level), this.getMultiplierList());
     }
     getXPGain() {
         return applySpeed(applyMultipliers(10, this.xpMultipliers));
