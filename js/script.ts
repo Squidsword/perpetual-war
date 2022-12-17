@@ -3,6 +3,7 @@ enum Info {
     Resource = "RESOURCE",
     Trait = "TRAIT",
     Category = "CATEGORY",
+    Object = "OBJECT"
 }
 
 enum Division {
@@ -12,6 +13,7 @@ enum Division {
 }
 
 enum Resource {
+    Time = "TIME",
     Population = "POPULATION",
     Resources = "RESOURCES",
     Science = "SCIENCE",
@@ -41,18 +43,63 @@ const categories = {
 const traits = {
     [Trait.Crops]: {
         [Info.Division]: Division.Economy,
-        [Info.Category]: Category.Sustainability
+        [Info.Category]: Category.Sustainability,
+        [Info.Object]: new TraitObject({
+            type: Trait.Crops,
+            maxXP: 10,
+            affects: Resource.Population,
+            effect: (level: number) => (level + 1),
+            scaling: (level: number) => Math.pow(1.01, level),
+        })
+    },
+    [Trait.Fields]: {
+        [Info.Division]: Division.Economy,
+        [Info.Category]: Category.Sustainability,
+        [Info.Object]: new TraitObject({
+            type: Trait.Fields,
+            maxXP: 100,
+            affects: Trait.Crops,
+            effect: (level: number) => (level + 1) * 1.1,
+            scaling: (level: number) => Math.pow(1.2, level),
+        })
     }
 }
 
-var player = {
-    resources: 1,
-    science: 0,
-    population: 1,
+const resources = {
+    [Resource.Resources]: new ResourceObject({
+        type: Resource.Time,
+        baseIncome: 1,
+        display: setResourceDisplay
+    }),
+    [Resource.Resources]: new ResourceObject({
+        type: Resource.Resources,
+        baseIncome: 1,
+        display: setResourceDisplay
+    }),
+    [Resource.Science]: new ResourceObject({
+        type: Resource.Science,
+        baseIncome: 0,
+    }),
+    [Resource.Population]: new ResourceObject({
+        type: Resource.Population,
+        baseIncome: 0.03
+    }),
+}
+
+var gameData = {
+    gameObjects: [] as GameObject[],
     focus: Trait.Crops,
     economy: {},
     technology: {},
     military: {}
+}
+
+function addMultipliers(): void {
+    for (let key in TraitObject.objects) {
+        let obj = TraitObject.traitObjects[key as keyof typeof TraitObject.traitObjects]
+        let affected_obj = GameObject.objects[obj.affects as keyof typeof GameObject.objects]
+        affected_obj.updateMultiplier(obj.type, obj.getEffect())
+    }
 }
 
 var day = 1
@@ -64,20 +111,12 @@ const units = ["", "k", "M", "B", "T", "q", "Q", "Sx", "Sp", "Oc"];
 const basePopulationGrowth = 0.03;
 const income = 1;
 
-const economyBaseData = {
-    [Trait.Crops]: {name: "Crops", maxXP: 10, scaling: 1.01, affects: Resource.Population, effect: (level: number) => (level + 1)},
-    [Trait.Fields]: {name: "Fields", maxXp: 100, scaling: 1.2, affects: Trait.Crops, effect: (level: number) => (level + 1)*0.1}
-}
-
-
 function update(): void {
-    applyIncome()
-    updatePopulation()
     progressTime()
     updateText()
 }
 
-function createHeaderRow(header: Category): HTMLTableRowElement | null {
+function createHeaderRow(header: Category): HTMLTableRowElement {
     var template = document.getElementById("headerTemplate") as HTMLTemplateElement
     var headerRow = template.content.firstElementChild!.cloneNode(true) as HTMLTableRowElement
     var data = categories[header]["headerData"]
@@ -96,15 +135,9 @@ function removeSpaces(str: string) {
     return str.replace(/ /g, "")
 }
 
-function updatePopulation(): void {
-    player.population += applySpeed(basePopulationGrowth)
-}
-
 function updateText(): void {
-    setResourceDisplay(player.resources)
-    setTimeDisplay(player.resources)
-    setDisplay("science", format(player.science))
-    setDisplay("population", format(player.population))
+    setResourceDisplay(ResourceObject.resourceObjects[Resource.Resources].amount)
+    setTimeDisplay(day)
 }
 
 function setDisplay(elementID: string, text: string): void {
@@ -174,8 +207,8 @@ function setTimeDisplay(time: number): void {
     if (dayHTML == null) {
         return
     }
-    yearHTML.textContent = `Year ${format(day / 365 + 1)}`
-    dayHTML.textContent = `Day ${format(day % 365)}`
+    yearHTML.textContent = `Year ${format(time / 365 + 1)}`
+    dayHTML.textContent = `Day ${format(time % 365)}`
 }
 
 function applyMultipliers(value: number, multipliers: number[]): number {
@@ -193,16 +226,8 @@ function applySpeed(value: number): number {
     return value / updateSpeed * getSpeed()
 }
 
-function applyIncome(): void {
-    player.resources += applySpeed(income)
-}
-
 function progressTime(): void {
     day += applySpeed(365/900)
-}
-
-function applyScience(): void {
-    player.science += applySpeed(income)
 }
 
 setInterval(update, 1000 / updateSpeed)
