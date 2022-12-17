@@ -45,15 +45,39 @@
                 <div class="w3-button w3-bar-item" onclick="setTab(this, 'settings')" style="float: right">Settings</div>
             </div>
             <div class="panel w3-margin-left w3-margin-top w3-padding" id="tabs" style="width: 800px; height: auto; float: left">
+                <template id="headerTemplate">
+                    <tr>
+                        <th class="categoryName"></th>
+                        <th class="levelName"></th>
+                        <th>Progress</th>
+                        <th>Remaining</th>
+                    </tr>
+                </template>
+                <template class="rowTemplate">
+                    <tr>
+                        <td>
+                            <div class="progress-bar progressBar tooltip">
+                                <div class="progress-fill progressFill"></div>
+                                <div class="progress-text name">Task</div>
+                            </div>
+                        </td>
+                        <td class="level">Level</td>
+                        <td class="value">
+                            <div class="effect"></div>
+                            <div class="income">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </td>
+                        <td class="xpGain">Progress</td>
+                        <td class="xpLeft">Remaining</td>
+                    </tr>
+                </template>
                 <div class="tab" id="economy">
                     <table id="economyTable" class="w3-table w3-bordered">
-                        <tr style="background-color:rgb(38, 136, 38)">
-                            <th class="category headerrow"> Sustainability </th>
-                            <th> Expansions </th>
-                            <th> Progress </th>
-                            <th> Remaining </th>
-                        </tr>
-                        <tr>
+                        <!-- <tr>
                             <td>
                                 <div class="progress-bar progressBar tooltip">  
                                     <div class="progress-fill progressFill" style="width: 10%;"> </div>
@@ -63,10 +87,7 @@
                             <td class="level"> 0 </td>
                             <td class="xpGain"> 100 </td>
                             <td class="xpLeft"> 1k </td>
-                        </tr>
-                        <tr>
-
-                        </tr>
+                        </tr> -->
                     </table>
                 </div>
                 <div class="tab" id="technology" style="display: none;">

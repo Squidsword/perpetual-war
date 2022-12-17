@@ -1,8 +1,58 @@
+enum Info {
+    Division = "DIVISION",
+    Resource = "RESOURCE",
+    Trait = "TRAIT",
+    Category = "CATEGORY",
+}
+
+enum Division {
+    Economy = "ECONOMY",
+    Technology = "TECHNOLOGY",
+    Military = "MILITARY",
+}
+
+enum Resource {
+    Population = "POPULATION",
+    Resources = "RESOURCES",
+    Science = "SCIENCE",
+}
+
+enum Trait {
+    Crops = "CROPS",
+    Fields = "FIELDS",
+}
+
+enum Category {
+    Sustainability = "SUSTAINABILITY",
+}
+
+const categories = {
+    [Category.Sustainability]: {
+        [Info.Division]: Division.Economy,
+        [Info.Trait]: [Trait.Crops, Trait.Fields],
+        "headerColor": "rgb(38, 136, 38)",
+        "headerData": {
+            "categoryName": "Sustainability",
+            "levelName": "Expansions"
+        },
+    }
+}
+
+const traits = {
+    [Trait.Crops]: {
+        [Info.Division]: Division.Economy,
+        [Info.Category]: Category.Sustainability
+    }
+}
+
 var player = {
     resources: 1,
     science: 0,
     population: 1,
-    research: {} 
+    focus: Trait.Crops,
+    economy: {},
+    technology: {},
+    military: {}
 }
 
 var day = 1
@@ -11,12 +61,43 @@ const baseGameSpeed = 1
 
 const units = ["", "k", "M", "B", "T", "q", "Q", "Sx", "Sp", "Oc"];
 
+const basePopulationGrowth = 0.03;
 const income = 1;
+
+const economyBaseData = {
+    [Trait.Crops]: {name: "Crops", maxXP: 10, scaling: 1.01, affects: Resource.Population, effect: (level: number) => (level + 1)},
+    [Trait.Fields]: {name: "Fields", maxXp: 100, scaling: 1.2, affects: Trait.Crops, effect: (level: number) => (level + 1)*0.1}
+}
+
 
 function update(): void {
     applyIncome()
+    updatePopulation()
     progressTime()
     updateText()
+}
+
+function createHeaderRow(header: Category): HTMLTableRowElement | null {
+    var template = document.getElementById("headerTemplate") as HTMLTemplateElement
+    var headerRow = template.content.firstElementChild!.cloneNode(true) as HTMLTableRowElement
+    var data = categories[header]["headerData"]
+    for (let name in categories[header]["headerData"]) {
+        let key = name as keyof typeof data
+        headerRow.getElementsByClassName(name)[0].textContent = data[key]
+    }
+    headerRow.style.backgroundColor = categories[header]["headerColor"]
+    headerRow.style.color = "#FFFFFF"
+    return headerRow
+}
+
+document.getElementById("economyTable")?.append(createHeaderRow(Category.Sustainability) as Node)
+
+function removeSpaces(str: string) {
+    return str.replace(/ /g, "")
+}
+
+function updatePopulation(): void {
+    player.population += applySpeed(basePopulationGrowth)
 }
 
 function updateText(): void {
@@ -28,38 +109,26 @@ function updateText(): void {
 
 function setDisplay(elementID: string, text: string): void {
     var elementHTML = document.getElementById(elementID)
-    if (elementHTML == null) {
-        return
-    }
-    elementHTML.textContent = text
+    elementHTML!.textContent = text
 }
 
 function setTab(element: HTMLSpanElement, tabName: string) {
     var tabButtonsHTML = document.getElementById("tabButtons")
     var tabsHTML = document.getElementById("tabs")
     var selected = document.getElementById(tabName)
-    if (tabsHTML == null) {
-        return
-    }
-    if (tabButtonsHTML == null) {
-        return
-    }
-    if (selected == null) {
-        return
-    }
 
-    for (let i of tabButtonsHTML.children) {
+    for (let i of tabButtonsHTML!.children) {
         let tabButton = i as HTMLSpanElement
         tabButton.classList.remove("w3-blue-gray")
 6    }
 
-    for (let i of tabsHTML.children) {
+    for (let i of tabsHTML!.children) {
         let tab = i as HTMLSpanElement
         tab.style.display = "none"
     }
     
     element.classList.add("w3-blue-gray")
-    selected.style.display = "block"
+    selected!.style.display = "block"
     
 }
 
@@ -77,9 +146,6 @@ function format(value: number): string {
 
 function setResourceDisplay(resources: number): void {
     var resourceHTML = document.getElementById("resources")
-    if (resourceHTML == null) {
-        return
-    }
     var tiers = ["p", "g", "s", "c"]
     var colors: { [tier: string] : string } = {
         "p": "#79b9c7",
@@ -92,7 +158,7 @@ function setResourceDisplay(resources: number): void {
         var base = Math.pow(10, (tiers.length - i - 1) * 2)
         var coins = Math.floor(resources / base)
         resources = resources - coins * base
-        var tierHTML = resourceHTML.children[i] as HTMLSpanElement
+        var tierHTML = resourceHTML!.children[i] as HTMLSpanElement
         tierHTML.textContent = coins > 0 ? format(coins) + tier : ""
         tierHTML.style.color = colors[tier]
         i++
