@@ -28,6 +28,18 @@ enum Category {
     Sustainability = "SUSTAINABILITY",
 }
 
+const divisions = {
+    [Division.Economy]: {
+        "table": document.getElementById("economyTable")
+    },
+    [Division.Technology]: {
+        "table": document.getElementById("technologyTable")
+    },
+    [Division.Military]: {
+        "table": document.getElementById("militaryTable")
+    }
+}
+
 const categories = {
     [Category.Sustainability]: {
         [Info.Division]: Division.Economy,
@@ -35,7 +47,8 @@ const categories = {
         "headerColor": "rgb(38, 136, 38)",
         "headerData": {
             "categoryName": "Sustainability",
-            "levelName": "Expansions"
+            "levelName": "Expansions",
+            "effect": "Effect"
         },
     }
 }
@@ -46,7 +59,7 @@ const traits = {
         [Info.Category]: Category.Sustainability,
         [Info.Object]: new TraitObject({
             type: Trait.Crops,
-            maxXP: 10,
+            maxXP: 100,
             affects: Resource.Population,
             effect: (level: number) => (level + 1),
             scaling: (level: number) => Math.pow(1.01, level),
@@ -57,7 +70,7 @@ const traits = {
         [Info.Category]: Category.Sustainability,
         [Info.Object]: new TraitObject({
             type: Trait.Fields,
-            maxXP: 100,
+            maxXP: 1000,
             affects: Trait.Crops,
             effect: (level: number) => (level + 1) * 1.1,
             scaling: (level: number) => Math.pow(1.2, level),
@@ -68,8 +81,8 @@ const traits = {
 const resources = {
     [Resource.Resources]: new ResourceObject({
         type: Resource.Time,
-        baseIncome: 1,
-        display: setResourceDisplay
+        baseIncome: 365/900,
+        display: setTimeDisplay
     }),
     [Resource.Resources]: new ResourceObject({
         type: Resource.Resources,
@@ -82,6 +95,7 @@ const resources = {
     }),
     [Resource.Population]: new ResourceObject({
         type: Resource.Population,
+        amount: 1,
         baseIncome: 0.03
     }),
 }
@@ -95,25 +109,27 @@ var gameData = {
 }
 
 function addMultipliers(): void {
-    for (let key in TraitObject.objects) {
+    for (let key in TraitObject.traitObjects) {
         let obj = TraitObject.traitObjects[key as keyof typeof TraitObject.traitObjects]
         let affected_obj = GameObject.objects[obj.affects as keyof typeof GameObject.objects]
         affected_obj.updateMultiplier(obj.type, obj.getEffect())
     }
 }
 
-var day = 1
 const updateSpeed = 20
 const baseGameSpeed = 1
 
-const units = ["", "k", "M", "B", "T", "q", "Q", "Sx", "Sp", "Oc"];
+const units = ["", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "Nn"];
 
 const basePopulationGrowth = 0.03;
 const income = 1;
 
 function update(): void {
-    progressTime()
-    updateText()
+    for (let key in GameObject.objects) {
+        var obj = GameObject.objects[key as Trait | Resource]
+        obj.update()
+    }
+    addMultipliers()
 }
 
 function createHeaderRow(header: Category): HTMLTableRowElement {
@@ -126,18 +142,33 @@ function createHeaderRow(header: Category): HTMLTableRowElement {
     }
     headerRow.style.backgroundColor = categories[header]["headerColor"]
     headerRow.style.color = "#FFFFFF"
+    var HTMLTable = divisions[categories[header][Info.Division]]["table"]
+    HTMLTable?.append(headerRow)
     return headerRow
 }
 
-document.getElementById("economyTable")?.append(createHeaderRow(Category.Sustainability) as Node)
+function createRow(trait: Trait) {
+    var template = document.getElementById("rowTemplate") as HTMLTemplateElement
+    var row = template.content.firstElementChild!.cloneNode(true) as HTMLTableRowElement
+    var obj = TraitObject.traitObjects[trait]
+    row.id = obj.getID()
+    row.getElementsByClassName("name")[0].textContent = obj.getName()
+    var HTMLTable = divisions[traits[trait][Info.Division]]["table"]
+    HTMLTable?.append(row)
+    return row
+}
+
+function createRowsFromCategory(category: Category) {
+    for (let t of categories[category][Info.Trait]) {
+        createRow(t as Trait)
+    }
+}
+
+createHeaderRow(Category.Sustainability)
+createRowsFromCategory(Category.Sustainability)
 
 function removeSpaces(str: string) {
     return str.replace(/ /g, "")
-}
-
-function updateText(): void {
-    setResourceDisplay(ResourceObject.resourceObjects[Resource.Resources].amount)
-    setTimeDisplay(day)
 }
 
 function setDisplay(elementID: string, text: string): void {
@@ -167,11 +198,11 @@ function setTab(element: HTMLSpanElement, tabName: string) {
 
 function format(value: number): string {
     if (value <= 0) {
-        return Math.floor(value).toString()
+        return Math.round(value).toString()
     }
     var tier = Math.log10(value) / 3 | 0 // bitwise or turns it into an int
     if (tier == 0) {
-        return Math.floor(value).toString()
+        return Math.round(value).toString()
     }
     var suffix = units[tier]
     return (value / Math.pow(10, tier*3)).toFixed(1) + suffix
@@ -192,10 +223,15 @@ function setResourceDisplay(resources: number): void {
         var coins = Math.floor(resources / base)
         resources = resources - coins * base
         var tierHTML = resourceHTML!.children[i] as HTMLSpanElement
-        tierHTML.textContent = coins > 0 ? format(coins) + tier : ""
+        if (tier == "c") {
+            tierHTML.textContent = format(coins) + tier
+        } else {
+            tierHTML.textContent = coins > 0 && tiers ? format(coins) + tier : ""
+        }
         tierHTML.style.color = colors[tier]
         i++
     }
+    
 }
 
 function setTimeDisplay(time: number): void {
@@ -208,7 +244,7 @@ function setTimeDisplay(time: number): void {
         return
     }
     yearHTML.textContent = `Year ${format(time / 365 + 1)}`
-    dayHTML.textContent = `Day ${format(time % 365)}`
+    dayHTML.textContent = `Day ${format(time % 365 + 1)}`
 }
 
 function applyMultipliers(value: number, multipliers: number[]): number {
@@ -224,10 +260,6 @@ function getSpeed(): number {
 
 function applySpeed(value: number): number {
     return value / updateSpeed * getSpeed()
-}
-
-function progressTime(): void {
-    day += applySpeed(365/900)
 }
 
 setInterval(update, 1000 / updateSpeed)

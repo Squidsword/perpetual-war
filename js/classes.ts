@@ -43,6 +43,13 @@ class ResourceObject extends GameObject {
     constructor(baseData: {[str: string]: any}) {
         super(baseData)
         this.baseIncome = baseData.baseIncome
+        
+        if ('display' in baseData) {
+            this.display = baseData.display
+        }
+        if ('amount' in baseData) {
+            this.amount = baseData.amount
+        }
         ResourceObject.resourceObjects[this.type as Resource] = this
     }
 
@@ -56,6 +63,7 @@ class ResourceObject extends GameObject {
 
     update() {
         this.increaseAmount()
+        this.updateDisplay()
     }
 
     updateDisplay() {
@@ -99,7 +107,7 @@ class TraitObject extends GameObject {
     }
 
     getXPGain() {
-        return applyMultipliers(10, this.xpMultipliers)
+        return applySpeed(applyMultipliers(10, this.xpMultipliers))
     }
 
     updateXP() {
@@ -114,8 +122,21 @@ class TraitObject extends GameObject {
         }
     }
 
+    updateRow() {
+        var row = document.getElementById(this.getID())
+        var affected_obj = GameObject.objects[this.affects]
+        
+        row!.getElementsByClassName("level")[0].textContent = format(this.level)
+        row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXPGain())
+        row!.getElementsByClassName("effect")[0].textContent = `${format(this.getEffect())}x ${affected_obj.getName()}`
+        row!.getElementsByClassName("xpLeft")[0].textContent = format(this.maxXP - this.xp)
+        var bar = (row!.getElementsByClassName("progressFill")[0] as HTMLDivElement)
+        bar.style.width = `${100 * this.xp / this.maxXP}%`
+    }
+
     update() {
         this.updateXP()
         this.updateLevel()
+        this.updateRow()
     }
 }

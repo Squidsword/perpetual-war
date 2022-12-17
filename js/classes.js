@@ -28,6 +28,12 @@ class ResourceObject extends GameObject {
         super(baseData);
         this.amount = 0;
         this.baseIncome = baseData.baseIncome;
+        if ('display' in baseData) {
+            this.display = baseData.display;
+        }
+        if ('amount' in baseData) {
+            this.amount = baseData.amount;
+        }
         ResourceObject.resourceObjects[this.type] = this;
     }
     getIncome() {
@@ -38,6 +44,7 @@ class ResourceObject extends GameObject {
     }
     update() {
         this.increaseAmount();
+        this.updateDisplay();
     }
     updateDisplay() {
         if (this.display) {
@@ -69,7 +76,7 @@ class TraitObject extends GameObject {
         return this.effect(this.level);
     }
     getXPGain() {
-        return applyMultipliers(10, this.xpMultipliers);
+        return applySpeed(applyMultipliers(10, this.xpMultipliers));
     }
     updateXP() {
         this.xp += this.getXPGain();
@@ -81,9 +88,20 @@ class TraitObject extends GameObject {
             this.maxXP = this.baseMaxXP * this.scaling(this.level);
         }
     }
+    updateRow() {
+        var row = document.getElementById(this.getID());
+        var affected_obj = GameObject.objects[this.affects];
+        row.getElementsByClassName("level")[0].textContent = format(this.level);
+        row.getElementsByClassName("xpGain")[0].textContent = format(this.getXPGain());
+        row.getElementsByClassName("effect")[0].textContent = `${format(this.getEffect())}x ${affected_obj.getName()}`;
+        row.getElementsByClassName("xpLeft")[0].textContent = format(this.maxXP - this.xp);
+        var bar = row.getElementsByClassName("progressFill")[0];
+        bar.style.width = `${100 * this.xp / this.maxXP}%`;
+    }
     update() {
         this.updateXP();
         this.updateLevel();
+        this.updateRow();
     }
 }
 TraitObject.traitObjects = {};
