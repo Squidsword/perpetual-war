@@ -25,7 +25,7 @@ enum Trait {
 }
 
 enum Category {
-    Sustainability = "SUSTAINABILITY",
+    Growth = "GROWTH",
 }
 
 type Progression = Resource | Trait
@@ -33,7 +33,7 @@ type XP = Trait
 
 const divisions = {
     [Division.Economy]: {
-        [Info.Category]: [Category.Sustainability],
+        [Info.Category]: [Category.Growth],
         "table": document.getElementById("economyTable")
     },
     [Division.Technology]: {
@@ -45,12 +45,12 @@ const divisions = {
 }
 
 const categories = {
-    [Category.Sustainability]: {
+    [Category.Growth]: {
         [Info.Division]: Division.Economy,
         [Info.Trait]: [Trait.Crops, Trait.Fields],
         "headerColor": "rgb(38, 136, 38)",
         "headerData": {
-            "categoryName": "Sustainability",
+            "categoryName": "Growth",
             "levelName": "Expansions",
             "effect": "Effect"
         },
@@ -60,22 +60,22 @@ const categories = {
 const traits = {
     [Trait.Crops]: {
         [Info.Division]: Division.Economy,
-        [Info.Category]: Category.Sustainability,
+        [Info.Category]: Category.Growth,
         [Info.Object]: new TraitObject({
             type: Trait.Crops,
-            maxXP: 100,
-            affects: {[Resource.Population]: (level: number) => 1 + (level)},
-            scaling: (level: number) => Math.pow(1.01, level),
+            maxXp: 100,
+            affects: {[Resource.Population]: (level: number) => 1 + (level * 0.1)},
+            scaling: (level: number) => Math.pow(1.005, level) + 0.05 * level,
         })
     },
     [Trait.Fields]: {
         [Info.Division]: Division.Economy,
-        [Info.Category]: Category.Sustainability,
+        [Info.Category]: Category.Growth,
         [Info.Object]: new TraitObject({
             type: Trait.Fields,
-            maxXP: 1000,
+            maxXp: 1000,
             affects: {[Trait.Crops]: (level: number) => 1 + (level * 0.1)},
-            scaling: (level: number) => Math.pow(1.2, level),
+            scaling: (level: number) => Math.pow(1.02, level) + 0.2 * level,
         })
     }
 }
@@ -99,7 +99,7 @@ const resources = {
         type: Resource.Population,
         amount: 1,
         baseIncome: 0.03,
-        affects: universalAffect((s:number, r:number) => 1 + Math.pow(s, 0.75))
+        xpAffects: universalAffect((s:number, r:number) => Math.pow(Math.floor(s), 0.75), true)
     }),
 }
 
@@ -118,18 +118,21 @@ var gameData = {
 
 function update(): void {
     for (let key in GameObject.objects) {
-        var obj = GameObject.objects[key as Trait | Resource]
+        var obj = GameObject.objects[key as Progression]
         obj.update()
     }
 }
 
-function universalAffect(f: (s: number, r:number) => number) {
+function universalAffect(f: (s: number, r:number) => number, xpOnly: boolean = false) {
     let affects = {} as {[key in Progression]: (s: number, r:number) => number}
-    for (let t in Trait) {
+    for (let t of Object.values(Trait)) {
         let trait_key = t as Progression
         affects[trait_key] = f
     }
-    for (let r in Resource) {
+    if (xpOnly) {
+        return affects
+    }
+    for (let r of Object.values(Resource)) {
         let resource_key = r as Resource
         affects[resource_key] = f
     }
@@ -205,16 +208,24 @@ function setTab(element: HTMLSpanElement, tabName: string) {
     
 }
 
-function format(value: number): string {
+function round(value: number, decimals: number = 0) {
+    return Math.round(value * Math.pow(10, decimals)) / Math.pow(10, decimals)
+}
+
+function floor(value: number, decimals: number = 0) {
+    return Math.floor(value * Math.pow(10, decimals)) / Math.pow(10, decimals)
+}
+
+function format(value: number, decimals: number = 0): string {
     if (value <= 0) {
-        return Math.round(value).toString()
+        return floor(value, decimals).toString()
     }
     var tier = Math.log10(value) / 3 | 0 // bitwise or turns it into an int
     if (tier == 0) {
-        return Math.round(value).toString()
+        return floor(value, decimals).toString()
     }
     var suffix = units[tier]
-    return (value / Math.pow(10, tier*3)).toFixed(1) + suffix
+    return floor(value / Math.pow(10, tier*3), decimals) + suffix
 }
 
 function setResourceDisplay(resources: number): void {
