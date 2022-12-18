@@ -165,7 +165,7 @@ class TraitObject extends GameObject implements XPObject {
 
     xp = 0
     xpMultipliers = {} as {[key in Progression]: (s: number, r: number) => number}
-
+    selected = false
     constructor(baseData: {[str: string] : any}) {
         super(baseData)
         this.baseMaxXp = baseData.maxXp
@@ -183,7 +183,9 @@ class TraitObject extends GameObject implements XPObject {
     }
 
     updateXp() {
-        this.xp += applySpeed(this.getXpGain())
+        if (this.selected) {
+            this.xp += applySpeed(this.getXpGain())
+        }
     }
 
     updateLevel() {

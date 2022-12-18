@@ -74,7 +74,7 @@ const traits = {
         [Info.Object]: new TraitObject({
             type: Trait.Fields,
             maxXp: 1000,
-            affects: {[Trait.Crops]: (level: number) => 1 + (level * 0.1)},
+            affects: {[Trait.Crops]: (level: number) => 1 + (level * 1.2)},
             scaling: (level: number) => Math.pow(1.02, level) + 0.2 * level,
         })
     }
@@ -116,11 +116,20 @@ var gameData = {
     military: {}
 }
 
-function update(): void {
+function update() {
     for (let key in GameObject.objects) {
         var obj = GameObject.objects[key as Progression]
         obj.update()
     }
+}
+
+function selectTrait(trait: Trait) {
+    for (let t in TraitObject.traitObjects) {
+        let traitKey = t as keyof typeof TraitObject.traitObjects
+        var obj = TraitObject.traitObjects[traitKey]
+        obj.selected = false
+    }
+    TraitObject.traitObjects[trait].selected = true
 }
 
 function universalAffect(f: (s: number, r:number) => number, xpOnly: boolean = false) {
@@ -160,6 +169,8 @@ function createRow(trait: Trait) {
     var obj = TraitObject.traitObjects[trait]
     row.id = obj.getID()
     row.getElementsByClassName("name")[0].textContent = obj.getName()
+    var button = row.getElementsByClassName("progressBar")[0] as HTMLDivElement
+    button.onclick = () => selectTrait(trait)
     var HTMLTable = divisions[traits[trait][Info.Division]]["table"]
     HTMLTable?.append(row)
     return row
@@ -283,7 +294,7 @@ function applySpeed(value: number): number {
 }
 
 createAllRows()
-
+selectTrait(Trait.Crops)
 setInterval(update, 1000 / updateSpeed)
 
 var canvas = document.querySelector('canvas') as HTMLCanvasElement

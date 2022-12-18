@@ -31,7 +31,7 @@ td {
     background-color: rgb(149, 192, 192)
 }
 
-.current {
+.selected {
     background-color: rgb(192, 149, 192) !important
 }
 
