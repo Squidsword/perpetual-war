@@ -1,13 +1,22 @@
 class GameObject {
-    static objects = {} as {[key in Resource | Trait]: GameObject}
+    static objects = {} as {[key in Progression]: GameObject}
 
     baseData: {[str: string]: any}
-    type: Resource | Trait
-    bonuses = []
-    multipliers = {} as {[key in Resource | Trait]: number}
+    type: Progression
+    bonuses = {} as {[key in Progression]: (s: number, r: number) => number}
+    multipliers = {} as {[key in Progression]: (s: number, r: number) => number}
+    affects = {} as {[key in Progression]: (s: number, r: number) => number}
+    amount = 0
+
     constructor(baseData: {[str: string]: any}) {
         this.baseData = baseData
         this.type = baseData.type
+        if ('affects' in baseData) {
+            this.affects = baseData.affects
+        }
+        if ('amount' in baseData) {
+            this.amount = baseData.amount
+        }
         GameObject.objects[this.type] = this
     }
 
@@ -19,12 +28,41 @@ class GameObject {
         return this.type.toLowerCase()
     }
 
-    updateMultiplier(source: Resource | Trait, value: number) {
-        this.multipliers[source] = value
+    receiveMultiplier(source: Progression, effect: (sl: number, dl:number) => number) {
+        this.multipliers[source] = effect
     }
 
-    getMultiplierList(): number[] {
-        return Object.values(this.multipliers)
+    receiveBonus(source: Progression, effect: (sl: number, dl:number) => number) {
+        this.bonuses[source] = effect
+    }
+
+    sendMultiplier(destination: Progression, effect: (sl: number, dl:number) => number) {
+        GameObject.objects[destination].multipliers[this.type] = effect
+    }
+
+    sendXPMultiplier(destination: Progression, effect: (sl: number, dl:number) => number) {
+        GameObject.objects[destination].multipliers[this.type] = effect
+    }
+
+    sendBonus(destination: Progression, effect: (sl: number, dl:number) => number) {
+        GameObject.objects[destination].bonuses[this.type] = effect
+    }
+
+    calculateEffect(r: Progression): number {
+        let reveiver_key = r as keyof typeof GameObject.objects
+        let receiver = GameObject.objects[reveiver_key]
+        return this.affects[r](this.amount, receiver.amount)
+    }
+
+    calculateMultipliers(multiplierMap = this.multipliers): number[] {
+        var multipliers = [] as number[]
+        for (let s in this.multipliers) {
+            let source_key = s as keyof typeof GameObject.objects
+            let source = GameObject.objects[source_key]
+            let multiplier = multiplierMap[source_key](source.amount, this.amount)
+            multipliers.push(multiplier)
+        }
+        return multipliers
     }
 
     update() {
@@ -36,8 +74,6 @@ class ResourceObject extends GameObject {
     static resourceObjects = {} as {[key in Resource]: ResourceObject}
 
     baseIncome: number
-    amount = 0
-
     display?: (amount: number) => void
 
     constructor(baseData: {[str: string]: any}) {
@@ -53,12 +89,16 @@ class ResourceObject extends GameObject {
         ResourceObject.resourceObjects[this.type as Resource] = this
     }
 
-    getIncome() {
-        return applyMultipliers(this.baseIncome, this.getMultiplierList())
+    getBonus() {
+
+    }
+
+    getFinalIncome() {
+        return applyMultipliers(this.baseIncome, this.calculateMultipliers())
     }
  
     increaseAmount() {
-        this.amount += applySpeed(this.getIncome())
+        this.amount += applySpeed(this.getFinalIncome())
     }
 
     update() {
@@ -84,30 +124,26 @@ class TraitObject extends GameObject {
 
     baseMaxXP: number
     maxXP: number
-    affects: Trait | Resource
-    effect: (l: number) => number
     scaling: (l: number) => number
 
-    level = 0
     xp = 0
-    xpMultipliers = []
+    xpMultipliers = {} as {[key in Progression]: (s: number, r: number) => number}
 
     constructor(baseData: {[str: string] : any}) {
         super(baseData)
         this.baseMaxXP = baseData.maxXP
         this.maxXP = baseData.maxXP
-        this.affects = baseData.affects
-        this.effect = baseData.effect
         this.scaling = baseData.scaling
         TraitObject.traitObjects[this.type as Trait] = this
     }
 
-    getEffect() {
-        return applyMultipliers(this.effect(this.level), this.getMultiplierList())
-    }
+    // Rework into map
+    // getEffect(source: Progression) {
+    //     return applyMultipliers(this.effects[source], this.calculateMultipliers())
+    // }
 
     getXPGain() {
-        return applySpeed(applyMultipliers(10, this.xpMultipliers))
+        return applySpeed(applyMultipliers(10, this.calculateMultipliers(this.xpMultipliers)))
     }
 
     updateXP() {
@@ -117,18 +153,23 @@ class TraitObject extends GameObject {
     updateLevel() {
         while (this.xp >= this.maxXP) {
             this.xp -= this.maxXP
-            this.level += 1
-            this.maxXP = this.baseMaxXP * this.scaling(this.level)
+            this.amount += 1
+            this.maxXP = this.baseMaxXP * this.scaling(this.amount)
         }
     }
 
     updateRow() {
         var row = document.getElementById(this.getID())
-        var affected_obj = GameObject.objects[this.affects]
-        
-        row!.getElementsByClassName("level")[0].textContent = format(this.level)
+
+        row!.getElementsByClassName("level")[0].textContent = format(this.amount)
         row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXPGain())
-        row!.getElementsByClassName("effect")[0].textContent = `${format(this.getEffect())}x ${affected_obj.getName()}`
+
+        for (let r in this.affects) {
+            let receiver_key = r as keyof typeof GameObject.objects
+            let receiver = GameObject.objects[receiver_key]
+            row!.getElementsByClassName("effect")[0].textContent = `${format(this.calculateEffect(receiver_key))}x ${receiver.getName()}`
+        }
+
         row!.getElementsByClassName("xpLeft")[0].textContent = format(this.maxXP - this.xp)
         var bar = (row!.getElementsByClassName("progressFill")[0] as HTMLDivElement)
         bar.style.width = `${100 * this.xp / this.maxXP}%`

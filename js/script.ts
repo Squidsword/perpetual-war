@@ -28,8 +28,12 @@ enum Category {
     Sustainability = "SUSTAINABILITY",
 }
 
+type Progression = Resource | Trait
+type XP = Trait
+
 const divisions = {
     [Division.Economy]: {
+        [Info.Category]: [Category.Sustainability],
         "table": document.getElementById("economyTable")
     },
     [Division.Technology]: {
@@ -60,8 +64,7 @@ const traits = {
         [Info.Object]: new TraitObject({
             type: Trait.Crops,
             maxXP: 100,
-            affects: Resource.Population,
-            effect: (level: number) => (level + 1),
+            affects: {[Resource.Population]: (level: number) => 1 + (level)},
             scaling: (level: number) => Math.pow(1.01, level),
         })
     },
@@ -71,8 +74,7 @@ const traits = {
         [Info.Object]: new TraitObject({
             type: Trait.Fields,
             maxXP: 1000,
-            affects: Trait.Crops,
-            effect: (level: number) => (level + 1) * 1.1,
+            affects: {[Trait.Crops]: (level: number) => 1 + (level * 0.1)},
             scaling: (level: number) => Math.pow(1.2, level),
         })
     }
@@ -96,9 +98,15 @@ const resources = {
     [Resource.Population]: new ResourceObject({
         type: Resource.Population,
         amount: 1,
-        baseIncome: 0.03
+        baseIncome: 0.03,
+        affects: universalAffect((s:number, r:number) => 1 + Math.pow(s, 0.75))
     }),
 }
+
+const updateSpeed = 20
+const baseGameSpeed = 1
+
+const units = ["", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "Nn"];
 
 var gameData = {
     gameObjects: [] as GameObject[],
@@ -108,28 +116,24 @@ var gameData = {
     military: {}
 }
 
-function addMultipliers(): void {
-    for (let key in TraitObject.traitObjects) {
-        let obj = TraitObject.traitObjects[key as keyof typeof TraitObject.traitObjects]
-        let affected_obj = GameObject.objects[obj.affects as keyof typeof GameObject.objects]
-        affected_obj.updateMultiplier(obj.type, obj.getEffect())
-    }
-}
-
-const updateSpeed = 20
-const baseGameSpeed = 1
-
-const units = ["", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "Nn"];
-
-const basePopulationGrowth = 0.03;
-const income = 1;
-
 function update(): void {
     for (let key in GameObject.objects) {
         var obj = GameObject.objects[key as Trait | Resource]
         obj.update()
     }
-    addMultipliers()
+}
+
+function universalAffect(f: (s: number, r:number) => number) {
+    let affects = {} as {[key in Progression]: (s: number, r:number) => number}
+    for (let t in Trait) {
+        let trait_key = t as Progression
+        affects[trait_key] = f
+    }
+    for (let r in Resource) {
+        let resource_key = r as Resource
+        affects[resource_key] = f
+    }
+    return affects
 }
 
 function createHeaderRow(header: Category): HTMLTableRowElement {
@@ -164,8 +168,13 @@ function createRowsFromCategory(category: Category) {
     }
 }
 
-createHeaderRow(Category.Sustainability)
-createRowsFromCategory(Category.Sustainability)
+function createAllRows() {
+    for (let c in categories) {
+        let category = c as keyof typeof categories
+        createHeaderRow(category)
+        createRowsFromCategory(category)
+    }
+}
 
 function removeSpaces(str: string) {
     return str.replace(/ /g, "")
@@ -261,6 +270,8 @@ function getSpeed(): number {
 function applySpeed(value: number): number {
     return value / updateSpeed * getSpeed()
 }
+
+createAllRows()
 
 setInterval(update, 1000 / updateSpeed)
 
