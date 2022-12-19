@@ -17,14 +17,12 @@ class Requirement {
     }
 
     isSatisfied() {
-        return GameObject.objects[this.type].amount >= this.threshold
+        return objects[this.type].amount >= this.threshold
     }
 
 }
 
 class GameObject {
-    static objects = {} as {[key in Progression]: GameObject}
-
     baseData: {[str: string]: any}
     type: Progression
     bonuses = {} as {[key in Progression]: (s: number, r: number) => number}
@@ -52,7 +50,6 @@ class GameObject {
         if ('amount' in baseData) {
             this.amount = baseData.amount
         }
-        GameObject.objects[this.type] = this
     }
 
     setFunctions(baseData: {[str: string]: any}) {
@@ -92,11 +89,11 @@ class GameObject {
     }
 
     sendMultiplier(receiverKey: Progression, effect: (sl: number, dl:number) => number) {
-        GameObject.objects[receiverKey].receiveMultiplier(this.type, effect)
+        objects[receiverKey].receiveMultiplier(this.type, effect)
     }
 
     sendXpMultiplier(receiverKey: Progression, effect: (sl: number, dl:number) => number) {
-        let receiver = GameObject.objects[receiverKey]
+        let receiver = objects[receiverKey]
         if (instanceOfXP(receiver)) {
             receiver.receiveXpMultiplier(this.type, effect)
         }
@@ -104,30 +101,30 @@ class GameObject {
 
     sendAllMultipliers() {
         for (let r in this.affects) {
-            let receiverKey = r as keyof typeof GameObject.objects
+            let receiverKey = r as keyof typeof objects
             this.sendMultiplier(receiverKey, this.affects[receiverKey])
         }
         for (let r in this.xpAffects) {
-            let receiverKey = r as keyof typeof GameObject.objects
+            let receiverKey = r as keyof typeof objects
             this.sendXpMultiplier(receiverKey, this.xpAffects[receiverKey])
         }
     }
 
     sendBonus(destination: Progression, effect: (sl: number, dl:number) => number) {
-        GameObject.objects[destination].bonuses[this.type] = effect
+        objects[destination].bonuses[this.type] = effect
     }
 
     calculateEffect(r: Progression): number {
-        let reveiver_key = r as keyof typeof GameObject.objects
-        let receiver = GameObject.objects[reveiver_key]
+        let reveiver_key = r as keyof typeof objects
+        let receiver = objects[reveiver_key]
         return this.affects[r](this.getEffectiveAmount(), receiver.amount)
     }
 
     calculateMultipliers(multiplierMap = this.multipliers): number[] {
         var multipliers = [] as number[]
         for (let s in multiplierMap) {
-            let source_key = s as keyof typeof GameObject.objects
-            let source = GameObject.objects[source_key]
+            let source_key = s as keyof typeof objects
+            let source = objects[source_key]
             let multiplier = multiplierMap[source_key](source.getEffectiveAmount(), this.amount)
             multipliers.push(multiplier)
         }
@@ -149,8 +146,6 @@ class GameObject {
 }
 
 class ResourceObject extends GameObject {
-    static resourceObjects = {} as {[key in Resource]: ResourceObject}
-
     baseIncome: number
     display?: (amount: number) => void
 
@@ -164,7 +159,6 @@ class ResourceObject extends GameObject {
         if ('amount' in baseData) {
             this.amount = baseData.amount
         }
-        ResourceObject.resourceObjects[this.type as Resource] = this
     }
 
     getBonus() {
@@ -212,8 +206,6 @@ class ResourceObject extends GameObject {
 }
 
 class TraitObject extends GameObject implements XPObject {
-    static traitObjects = {} as {[key in Trait]: TraitObject}
-
     baseMaxXp: number
     maxXp: number
     scaling: (l: number) => number
@@ -226,7 +218,6 @@ class TraitObject extends GameObject implements XPObject {
         this.baseMaxXp = baseData.maxXp
         this.maxXp = baseData.maxXp
         this.scaling = baseData.scaling
-        TraitObject.traitObjects[this.type as Trait] = this
     }
 
     getXpGain() {
@@ -270,8 +261,8 @@ class TraitObject extends GameObject implements XPObject {
         row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXpGain())
 
         for (let r in this.affects) {
-            let receiver_key = r as keyof typeof GameObject.objects
-            let receiver = GameObject.objects[receiver_key]
+            let receiver_key = r as keyof typeof objects
+            let receiver = objects[receiver_key]
             row!.getElementsByClassName("effect")[0].textContent = `${format(this.calculateEffect(receiver_key), 1)}x ${receiver.getName()}`
         }
 

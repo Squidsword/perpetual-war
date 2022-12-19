@@ -224,8 +224,8 @@ function universalAffect(f: (s: number, r:number) => number, xpOnly: boolean = f
 
 function categoryUnlocked(c: Category) {
     for (let t of metadata[c][Info.Trait]) {
-        let traitKey = t as keyof typeof GameObject.objects
-        if (GameObject.objects[traitKey].isUnlocked()) {
+        let traitKey = t as keyof typeof objects
+        if (objects[traitKey].isUnlocked()) {
             return true
         }
     }
@@ -271,8 +271,8 @@ function createHeaderRow(category: Category): HTMLTableRowElement {
     }
     var unlocked = false
     for (let t of metadata[category][Info.Trait]) {
-        let traitKey = t as keyof typeof GameObject.objects
-        if (GameObject.objects[traitKey].isUnlocked()) {
+        let traitKey = t as keyof typeof objects
+        if (objects[traitKey].isUnlocked()) {
             unlocked = true
         }
     }
@@ -291,7 +291,7 @@ function createHeaderRow(category: Category): HTMLTableRowElement {
 function createRow(trait: Trait) {
     var template = document.getElementById("rowTemplate") as HTMLTemplateElement
     var row = template.content.firstElementChild!.cloneNode(true) as HTMLTableRowElement
-    var obj = TraitObject.traitObjects[trait]
+    var obj = objects[trait]
     row.id = obj.getID()
     row.getElementsByClassName("name")[0].textContent = obj.getName()
     var button = row.getElementsByClassName("progressBar")[0] as HTMLDivElement
@@ -422,9 +422,7 @@ function applySpeed(value: number): number {
 }
 
 // function save() {
-//     localStorage.setItem('gameObjects', JSON.stringify(GameObject.objects))
-//     localStorage.setItem('resourceObjects', JSON.stringify(ResourceObject.resourceObjects))
-//     localStorage.setItem('traitObjects', JSON.stringify(TraitObject.traitObjects))
+//     localStorage.setItem('gameObjects', JSON.stringify(objects))
 // }
   
 // function load() {
