@@ -186,21 +186,19 @@ const baseGameSpeed = 1
 const units = ["", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "Nn"];
 
 function update() {
-    for (let key in GameObject.objects) {
-        var obj = GameObject.objects[key as Progression]
-        obj.update()
+    for (let keyString in objects) {
+        let key = keyString as Progression
+        objects[key].update()
     }
     updateCategories()
     updateDivisions()
 }
 
 function selectTrait(trait: Trait) {
-    for (let t in TraitObject.traitObjects) {
-        let traitKey = t as keyof typeof TraitObject.traitObjects
-        var obj = TraitObject.traitObjects[traitKey]
-        obj.selected = false
+    for (let trait of Object.values(Trait)) {
+        objects[trait].selected = false
     }
-    TraitObject.traitObjects[trait].select()
+    objects[trait].select()
 }
 
 function universalAffect(f: (s: number, r:number) => number, xpOnly: boolean = false, exclude: Progression[] = []) {
