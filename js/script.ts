@@ -421,27 +421,29 @@ function applySpeed(value: number): number {
     return value / updateSpeed * getSpeed()
 }
 
-// function save() {
-//     localStorage.setItem('gameObjects', JSON.stringify(objects))
-// }
+function save() {
+    localStorage.setItem('gameObjects', JSON.stringify(objects))
+}
   
-// function load() {
-//     GameObject.objects = JSON.parse(localStorage.getItem('gameObjects') as string)
-//     ResourceObject.resourceObjects = JSON.parse(localStorage.getItem('resourceObjects') as string)
-//     TraitObject.traitObjects = JSON.parse(localStorage.getItem('traitObjects') as string)
-//     for (let o in GameObject.objects) {
-//         let objectKey = o as keyof typeof objects
-//         let gameObject = objectKey[objectKey]
-//     }
-// }
+function load() {
+    let loadedData = localStorage.getItem('gameObjects') as string
+    if (!loadedData) {
+        return
+    }
+    let loadedObjects = JSON.parse(loadedData)
+    for (let keyString in loadedObjects) {
+        let key = keyString as keyof typeof objects
+        objects[key].load(loadedObjects[keyString])
+    }
+}
 
 
 createAllRows()
 selectTrait(Trait.Crops)
 setTab(document.getElementById("economyButton") as HTMLSpanElement, "economy")
-//load()
+load()
 setInterval(update, 1000 / updateSpeed)
-//setInterval(save, 3000)
+setInterval(save, 3000)
 
 var canvas = document.querySelector('canvas') as HTMLCanvasElement
 var c = canvas.getContext('2d')

@@ -52,20 +52,8 @@ class GameObject {
         }
     }
 
-    setFunctions(baseData: {[str: string]: any}) {
-        if ('bonuses' in baseData) {
-            this.bonuses = baseData.bonuses
-        }
-        if ('requirements' in baseData) {
-            this.requirements = baseData.requirements
-        }
-        if ('affects' in baseData) {
-            this.affects = baseData.affects
-        }
-        if ('xpAffects' in baseData) {
-            this.xpAffects = baseData.xpAffects
-        }
-
+    update() {
+        this.sendAllMultipliers()
     }
 
     getName() {
@@ -140,25 +128,31 @@ class GameObject {
         return true
     }
 
-    update() {
-        this.sendAllMultipliers()
+    load(copyObj: any) {
+        this.amount = copyObj.amount
     }
+
 }
 
 class ResourceObject extends GameObject {
-    baseIncome: number
+    baseIncome = 0
     display?: (amount: number) => void
 
     constructor(baseData: {[str: string]: any}) {
         super(baseData)
-        this.baseIncome = baseData.baseIncome
-        
+        if ('baseIncome' in baseData) {
+            this.baseIncome = baseData.baseIncome
+        }
         if ('display' in baseData) {
             this.display = baseData.display
         }
-        if ('amount' in baseData) {
-            this.amount = baseData.amount
-        }
+    }
+
+    update() {
+        super.update()
+        this.increaseAmount()
+        this.sendAllMultipliers()
+        this.updateDisplay()
     }
 
     getBonus() {
@@ -175,13 +169,6 @@ class ResourceObject extends GameObject {
  
     increaseAmount() {
         this.amount += applySpeed(this.getFinalIncome())
-    }
-
-    update() {
-        super.update()
-        this.increaseAmount()
-        this.sendAllMultipliers()
-        this.updateDisplay()
     }
 
     updateDisplay() {
@@ -207,17 +194,26 @@ class ResourceObject extends GameObject {
 
 class TraitObject extends GameObject implements XPObject {
     baseMaxXp: number
-    maxXp: number
     scaling: (l: number) => number
+    xpMultipliers = {} as {[key in Progression]: (s: number, r: number) => number}
 
     xp = 0
-    xpMultipliers = {} as {[key in Progression]: (s: number, r: number) => number}
+    maxXp: number
     selected = false
     constructor(baseData: {[str: string] : any}) {
         super(baseData)
         this.baseMaxXp = baseData.maxXp
         this.maxXp = baseData.maxXp
         this.scaling = baseData.scaling
+    }
+
+    update() {
+        if (this.isUnlocked()) {
+            super.update()
+            this.updateXp()
+            this.updateLevel()
+        }
+        this.updateRow()
     }
 
     getXpGain() {
@@ -276,12 +272,11 @@ class TraitObject extends GameObject implements XPObject {
         }
     }
 
-    update() {
-        if (this.isUnlocked()) {
-            super.update()
-            this.updateXp()
-            this.updateLevel()
-        }
-        this.updateRow()
+    load(copyObj: any) {
+        super.load(copyObj)
+        this.xp = copyObj.xp
+        this.maxXp = copyObj.maxXp
+        this.selected = copyObj.selected
     }
+
 }
