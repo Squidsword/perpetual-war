@@ -11,8 +11,8 @@
 <body id="body" class="dark">
     <div class="w3-margin">
         <h1> Perpetual War </h1>
-        <div style="width: 1220px; height: 600px"> 
-            <div class="panel w3-padding" style="width: 300px; height: auto; float: left">
+        <div style="width: 82rem; height: 40rem"> 
+            <div class="panel w3-padding" style="width: 20rem; height: auto; float: left">
                 <div id="timeDisplay", style="margin-bottom: 0.5em;">
                     <div id="year" style="font-size: large;"> Year 1</div>
                     <div id="day" style="color: rgb(175,175,175)"> Day 1</div>
@@ -25,7 +25,7 @@
             
                 <div id = "scienceDisplay">
                     <div style="color:gray"> Science </div>
-                    <span id="science" style="font-size: large; color:cornflowerblue">0</span>
+                    <span id="science" style="font-size: large; color:#0892D0">0</span>
                 </div>
                 <div id="capitalDisplay">
                     <span style="color:gray ">Capital</span>
@@ -38,15 +38,15 @@
                 </div>
 
             </div>
-            <div class="panel w3-margin-left" id="tabButtons" style="width: 900px; height: 40px; float: left">
-                <div class="w3-button w3-bar-item" id="economyButton" style="max-width: 200px;" onclick="setTab(this, 'economy')">Economy</div>
+            <div class="panel w3-margin-left" id="tabButtons" style="width: 60rem; height: 5/3rem; float: left">
+                <div class="w3-button w3-bar-item" id="economyButton" style="max-width: 12rem;" onclick="setTab(this, 'economy')">Economy</div>
                 <div class="w3-button w3-bar-item" id="technologyButton" style="display: none;" onclick="setTab(this, 'technology')">Technology</div>
                 <div class="w3-button w3-bar-item" id="militaryButton" style="display: none;" onclick="setTab(this, 'military')">Military</div>
                 <div class="w3-button w3-bar-item" id="battlegroundsButton" style="display: none;" onclick="setTab(this, 'battlegrounds')">Battlegrounds</div>
                 <div class="w3-button w3-bar-item" id="prestigeButton" style="display: none;" onclick="setTab(this, 'prestige')">Prestige</div>
-                <div class="w3-button w3-bar-item" id="settingsButton" style="display: none;" onclick="setTab(this, 'settings')">Settings</div>
+                <div class="w3-button w3-bar-item" id="settingsButton" style="float: right;" onclick="setTab(this, 'settings')">Settings</div>
             </div>
-            <div class="panel w3-margin-left w3-margin-top w3-padding" id="tabs" style="width: 900px; height: auto; float: left">
+            <div class="panel w3-margin-left w3-margin-top w3-padding" id="tabs" style="width: 60rem; height: auto; float: left">
                 <template id="headerTemplate">
                     <tr>
                         <th class="categoryName"></th>
@@ -80,17 +80,7 @@
                 </template>
                 <div class="tab" id="economy">
                     <table id="economyTable" class="w3-table w3-bordered">
-                        <!-- <tr>
-                            <td>
-                                <div class="progress-bar progressBar tooltip">  
-                                    <div class="progress-fill progressFill" style="width: 10%;"> </div>
-                                    <span class="progress-text name"> Fields </span>
-                                </div>
-                            </td>
-                            <td class="level"> 0 </td>
-                            <td class="xpGain"> 100 </td>
-                            <td class="xpLeft"> 1k </td>
-                        </tr> -->
+
                     </table>
                 </div>
                 <div class="tab" id="technology" style="display: none;">

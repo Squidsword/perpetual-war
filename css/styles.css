@@ -28,11 +28,11 @@ td {
 
 .progress-fill {
     height: 30px;
-    background-color: rgb(149, 192, 192)
+    background-color: rgb(149, 179, 186)
 }
 
 .selected {
-    background-color: rgb(192, 149, 192) !important
+    background-color: rgb(29, 171, 184) !important
 }
 
 .hidden {

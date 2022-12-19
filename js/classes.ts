@@ -22,6 +22,10 @@ class Requirement {
 
 }
 
+class GameEvent {
+
+}
+
 class GameObject {
     baseData: {[str: string]: any}
     type: Progression
@@ -57,7 +61,7 @@ class GameObject {
     }
 
     getName() {
-        return this.type.charAt(0).toUpperCase() + this.type.slice(1).toLowerCase()
+        return this.type.toLowerCase().split('_').filter(x => x.length > 0).map(x => (x.charAt(0).toUpperCase() + x.slice(1))).join(" ")
     }
 
     getID() {
@@ -192,7 +196,7 @@ class ResourceObject extends GameObject {
     }
 }
 
-class TraitObject extends GameObject implements XPObject {
+class LevelObject extends GameObject implements XPObject {
     baseMaxXp: number
     scaling: (l: number) => number
     xpMultipliers = {} as {[key in Progression]: (s: number, r: number) => number}
@@ -280,3 +284,92 @@ class TraitObject extends GameObject implements XPObject {
     }
 
 }
+
+// class ResearchObject extends GameObject implements XPObject {
+//     requiredXp: number
+//     overcapScaling: (timesHigher: number) => number
+//     xpMultipliers = {} as {[key in Progression]: (s: number, r: number) => number}
+
+//     xp = 0
+//     selected = false
+//     constructor(baseData: {[str: string] : any}) {
+//         super(baseData)
+//         this.requiredXp = baseData.requiredXp
+//         this.overcapScaling = baseData.overcapScaling
+//     }
+
+//     update() {
+//         if (this.isUnlocked()) {
+//             super.update()
+//             this.updateXp()
+//         }
+//         this.updateRow()
+//     }
+
+//     getXpGain() {
+//         return applyMultipliers(10, this.calculateMultipliers(this.xpMultipliers))
+//     }
+
+//     receiveXpMultiplier(source: Progression, effect: (s: number, r: number) => number): void {
+//         this.xpMultipliers[source] = effect
+//     }
+
+//     select() {
+//         this.selected = true
+//     }
+
+//     isSelected() {
+//         return this.selected
+//     }
+
+//     updateXp() {
+//         if (this.isSelected()) {
+//             this.xp += applySpeed(this.getXpGain())
+//         }
+//     }
+
+//     isComplete() {
+//         return this.xp >= this.requiredXp
+//     }
+
+//     updateMultiplier() {
+//         if (!this.isComplete()) {
+//             return
+//         }
+
+//     }
+
+//     updateRow() {
+//         var row = document.getElementById(this.getID())
+
+//         if (this.isUnlocked()) {
+//             row!.style.display = ""
+//         } else {
+//             row!.style.display = "none"
+//         }
+
+//         row!.getElementsByClassName("level")[0].textContent = format(this.amount)
+//         row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXpGain())
+
+//         for (let r in this.affects) {
+//             let receiver_key = r as keyof typeof objects
+//             let receiver = objects[receiver_key]
+//             row!.getElementsByClassName("effect")[0].textContent = `${format(this.calculateEffect(receiver_key), 1)}x ${receiver.getName()}`
+//         }
+
+//         row!.getElementsByClassName("xpLeft")[0].textContent = format(this.requiredXp - this.xp)
+//         var bar = (row!.getElementsByClassName("progressFill")[0] as HTMLDivElement)
+//         bar.style.width = `${Math.max(100, 100 * this.xp / this.requiredXp)}%`
+//         if (this.isSelected()) {
+//             bar.classList.add('selected')
+//         } else {
+//             bar.classList.remove('selected')
+//         }
+//     }
+
+//     load(copyObj: any) {
+//         super.load(copyObj)
+//         this.xp = copyObj.xp
+//         this.selected = copyObj.selected
+//     }
+// }
