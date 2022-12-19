@@ -14,37 +14,39 @@
         <div style="width: 1220px; height: 600px"> 
             <div class="panel w3-padding" style="width: 300px; height: auto; float: left">
                 <div id="timeDisplay", style="margin-bottom: 0.5em;">
-                    <div id="year" style="font-size: large;"></div>
-                    <div id="day" style="color: rgb(175,175,175)"></div>
+                    <div id="year" style="font-size: large;"> Year 1</div>
+                    <div id="day" style="color: rgb(175,175,175)"> Day 1</div>
                 </div>
-                <span style="color:gray">Population</span>
-                <div style="font-size: large" id="populationDisplay">
-                    <span id="population" style="color:rgb(191, 158, 116)">14</span>
+                
+                <div id="populationDisplay">
+                    <div style="color:gray">Population</div>
+                    <span id="population" style="font-size: large; color:rgb(191, 158, 116)">1</span>
                 </div>
-                <div id = "resourcesDisplay">
+            
+                <div id = "scienceDisplay">
+                    <div style="color:gray"> Science </div>
+                    <span id="science" style="font-size: large; color:cornflowerblue">0</span>
+                </div>
+                <div id="resourcesDisplay">
                     <span style="color:gray ">Resources</span>
                     <div style="font-size: large" id="resources">
                         <span></span>
                         <span></span>
                         <span></span>
-                        <span></span>
+                        <span>0c</span>
                     </div>
-                </div>
-                <span style="color:gray"> Science </span>
-                <div style="font-size: large" id = "scienceDisplay">
-                    <span id="science" style="color:cornflowerblue">27</span>
                 </div>
 
             </div>
-            <div class="panel w3-margin-left" id="tabButtons" style="width: 800px; height: 40px; float: left">
-                <div class="w3-button w3-bar-item" onclick="setTab(this, 'economy')">Economy</div>
-                <div class="w3-button w3-bar-item" onclick="setTab(this, 'technology')">Technology</div>
-                <div class="w3-button w3-bar-item" onclick="setTab(this, 'military')">Military</div>
-                <div class="w3-button w3-bar-item" onclick="setTab(this, 'battlegrounds')">Battlegrounds</div>
-                <div class="w3-button w3-bar-item" onclick="setTab(this, 'prestige')">Prestige</div>
-                <div class="w3-button w3-bar-item" onclick="setTab(this, 'settings')" style="float: right">Settings</div>
+            <div class="panel w3-margin-left" id="tabButtons" style="width: 900px; height: 40px; float: left">
+                <div class="w3-button w3-bar-item" id="economyButton" style="max-width: 200px;" onclick="setTab(this, 'economy')">Economy</div>
+                <div class="w3-button w3-bar-item" id="technologyButton" style="display: none;" onclick="setTab(this, 'technology')">Technology</div>
+                <div class="w3-button w3-bar-item" id="militaryButton" style="display: none;" onclick="setTab(this, 'military')">Military</div>
+                <div class="w3-button w3-bar-item" id="battlegroundsButton" style="display: none;" onclick="setTab(this, 'battlegrounds')">Battlegrounds</div>
+                <div class="w3-button w3-bar-item" id="prestigeButton" style="display: none;" onclick="setTab(this, 'prestige')">Prestige</div>
+                <div class="w3-button w3-bar-item" id="settingsButton" style="display: none;" onclick="setTab(this, 'settings')">Settings</div>
             </div>
-            <div class="panel w3-margin-left w3-margin-top w3-padding" id="tabs" style="width: 800px; height: auto; float: left">
+            <div class="panel w3-margin-left w3-margin-top w3-padding" id="tabs" style="width: 900px; height: auto; float: left">
                 <template id="headerTemplate">
                     <tr>
                         <th class="categoryName"></th>
@@ -62,7 +64,7 @@
                                 <div class="progress-text name">Task</div>
                             </div>
                         </td>
-                        <td class="level">Level</td>
+                        <td class="level"></td>
                         <td class="value">
                             <div class="effect"></div>
                             <div class="income">
@@ -72,8 +74,8 @@
                                 <span></span>
                             </div>
                         </td>
-                        <td class="xpGain">Progress</td>
-                        <td class="xpLeft">Remaining</td>
+                        <td class="xpGain"></td>
+                        <td class="xpLeft"></td>
                     </tr>
                 </template>
                 <div class="tab" id="economy">

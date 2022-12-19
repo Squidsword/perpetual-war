@@ -7,6 +7,21 @@ function instanceOfXP(object: any): object is XPObject {
     return 'receiveXpMultiplier' in object
 }
 
+class Requirement {
+    type: Progression
+    threshold: number
+
+    constructor(type: Progression, threshold: number) {
+        this.type = type
+        this.threshold = threshold
+    }
+
+    isSatisfied() {
+        return GameObject.objects[this.type].amount >= this.threshold
+    }
+
+}
+
 class GameObject {
     static objects = {} as {[key in Progression]: GameObject}
 
@@ -16,11 +31,15 @@ class GameObject {
     multipliers = {} as {[key in Progression]: (s: number, r: number) => number}
     affects = {} as {[key in Progression]: (s: number, r: number) => number}
     xpAffects = {} as {[key in Progression]: (s: number, r: number) => number}
+    requirements = [] as Requirement[]
     amount = 0
 
     constructor(baseData: {[str: string]: any}) {
         this.baseData = baseData
         this.type = baseData.type
+        if ('requirements' in baseData) {
+            this.requirements = baseData.requirements
+        }
         if ('affects' in baseData) {
             this.affects = baseData.affects
         }
@@ -96,6 +115,15 @@ class GameObject {
         return multipliers
     }
 
+    isUnlocked() {
+        for (let r of this.requirements) {
+            if (!r.isSatisfied()) {
+                return false
+            }
+        }
+        return true
+    }
+
     update() {
         this.sendAllMultipliers()
     }
@@ -144,15 +172,23 @@ class ResourceObject extends GameObject {
     }
 
     updateDisplay() {
+        var HTML_display = document.getElementById(`${this.getID()}Display`)
+        if (HTML_display) {
+            if (this.isUnlocked()) {
+                HTML_display.style.display = ""
+            } else {
+                HTML_display.style.display = "none"
+            }
+        }
         if (this.display) {
             this.display(this.amount)
             return
         }
-        var HTML_display = document.getElementById(this.getID())
-        if (HTML_display == null) {
+        var HTML = document.getElementById(this.getID())
+        if (HTML == null) {
             return
         }
-        HTML_display.textContent = format(this.amount)
+        HTML.textContent = format(this.amount)
     }
 }
 
@@ -182,8 +218,16 @@ class TraitObject extends GameObject implements XPObject {
         this.xpMultipliers[source] = effect
     }
 
+    select() {
+        this.selected = true
+    }
+
+    isSelected() {
+        return this.selected
+    }
+
     updateXp() {
-        if (this.selected) {
+        if (this.isSelected()) {
             this.xp += applySpeed(this.getXpGain())
         }
     }
@@ -199,6 +243,10 @@ class TraitObject extends GameObject implements XPObject {
     updateRow() {
         var row = document.getElementById(this.getID())
 
+        if (this.isUnlocked()) {
+            row!.style.display = ""
+        }
+
         row!.getElementsByClassName("level")[0].textContent = format(this.amount)
         row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXpGain(), 1)
 
@@ -211,12 +259,19 @@ class TraitObject extends GameObject implements XPObject {
         row!.getElementsByClassName("xpLeft")[0].textContent = format(this.maxXp - this.xp)
         var bar = (row!.getElementsByClassName("progressFill")[0] as HTMLDivElement)
         bar.style.width = `${100 * this.xp / this.maxXp}%`
+        if (this.isSelected()) {
+            bar.classList.add('selected')
+        } else {
+            bar.classList.remove('selected')
+        }
     }
 
     update() {
-        super.update()
-        this.updateXp()
-        this.updateLevel()
+        if (this.isUnlocked()) {
+            super.update()
+            this.updateXp()
+            this.updateLevel()
+        }
         this.updateRow()
     }
 }
