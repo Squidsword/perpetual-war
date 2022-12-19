@@ -4,6 +4,7 @@ enum Info {
     Trait = "TRAIT",
     Category = "CATEGORY",
     Object = "OBJECT",
+    BaseData = "BASEDATA"
 }
 
 enum Division {
@@ -15,7 +16,7 @@ enum Division {
 enum Resource {
     Time = "TIME",
     Population = "POPULATION",
-    Resources = "RESOURCES",
+    Capital = "CAPITAL",
     Science = "SCIENCE",
     Rebirths = "REBIRTHS",
 }
@@ -37,12 +38,110 @@ enum Category {
 type Progression = Resource | Trait
 type XP = Trait
 
-var divisions = {
+const baseData = {
+    [Trait.Crops]: {
+        type: Trait.Crops,
+        maxXp: 100,
+        affects: {[Resource.Population]: (level: number) => 1 + (level * 0.1)},
+        scaling: (level: number) => Math.pow(1.01, level) + 0.1 * level,
+    },
+    [Trait.Fields]: {
+        requirements: [new Requirement(Trait.Crops, 5)],
+        type: Trait.Fields,
+        maxXp: 500,
+        affects: {[Trait.Crops]: (level: number) => 1 + (level * 0.2)},
+        scaling: (level: number) => Math.pow(1.02, level) + 0.2 * level,
+    }, 
+    [Trait.Barns]: {
+        requirements: [new Requirement(Trait.Fields, 10)],
+        type: Trait.Barns,
+        maxXp: 5000,
+        affects: {[Trait.Fields]: (level: number) => 1 + (level * 0.5)},
+        scaling: (level: number) => Math.pow(1.05, level) + 0.5 * level,
+    },
+    [Trait.Learner]: {
+        requirements: [new Requirement(Resource.Population, 100)],
+        type: Trait.Learner,
+        maxXp: 500,
+        affects: {[Resource.Science]: (level: number) => 1 + (level * 0.1)},
+        scaling: (level: number) => Math.pow(1.01, level) + 0.1 * level,
+    },
+    [Resource.Time]: {
+        type: Resource.Time,
+        baseIncome: 365/900,
+        display: setTimeDisplay
+    },
+    [Resource.Population]: {
+        type: Resource.Population,
+        amount: 1,
+        baseIncome: 0.1,
+        xpAffects: universalAffect((s:number, r:number) => Math.pow(Math.floor(s), 0.75), false, [Resource.Population])
+    },
+    [Resource.Science]: {
+        type: Resource.Science,
+        baseIncome: 0.01,
+        requirements: [new Requirement(Resource.Population, 100)]
+    },
+    [Resource.Capital]: {
+        type: Resource.Capital,
+        baseIncome: 0.001,
+        requirements: [new Requirement(Resource.Population, 1000)],
+        display: setCapitalDisplay
+    },
+    [Resource.Rebirths]: {
+        type: Resource.Rebirths,
+        amount: 0,
+        baseIncome: 0
+    },
+}
+
+const metadata = {
     [Division.Economy]: {
         [Info.Category]: [Category.Growth],
         "button": document.getElementById("economyButton"),
         "table": document.getElementById("economyTable")
     },
+
+        [Category.Growth]: {
+            [Info.Division]: Division.Economy,
+            [Info.Trait]: [Trait.Crops, Trait.Fields, Trait.Barns],
+            "headerColor": "rgb(38, 136, 38)",
+            "headerData": {
+                "categoryName": "Growth",
+                "levelName": "Expansions",
+                "effect": "Effect"
+            },
+        },
+
+            [Trait.Crops]: {
+                [Info.Division]: Division.Economy,
+                [Info.Category]: Category.Growth,
+            },
+            [Trait.Fields]: {
+                [Info.Division]: Division.Economy,
+                [Info.Category]: Category.Growth,
+            },
+            [Trait.Barns]: {
+                [Info.Division]: Division.Economy,
+                [Info.Category]: Category.Growth,
+            },
+
+        [Category.Discovery]: {
+            [Info.Division]: Division.Economy,
+            [Info.Trait]: [Trait.Learner],
+            "headerColor": "#089D0",
+            "headerData": {
+                "categoryName": "Discovery",
+                "levelName": "Movements",
+                "effect": "Effect"
+            },
+        },
+
+            [Trait.Learner]: {
+                [Info.Division]: Division.Economy,
+                [Info.Category]: Category.Discovery,
+            },
+
     [Division.Technology]: {
         [Info.Category]: [],
         "button": document.getElementById("technologyButton"),
@@ -53,119 +152,38 @@ var divisions = {
         "button": document.getElementById("militaryButton"),
         "table": document.getElementById("militaryTable")
     },
+
+    [Resource.Time]: {
+
+    },
+    [Resource.Population]: {
+
+    },
+    [Resource.Science]: {
+
+    },
+    [Resource.Capital]: {
+
+    },
 }
 
-var categories = {
-    [Category.Growth]: {
-        [Info.Division]: Division.Economy,
-        [Info.Trait]: [Trait.Crops, Trait.Fields, Trait.Barns],
-        "headerColor": "rgb(38, 136, 38)",
-        "headerData": {
-            "categoryName": "Growth",
-            "levelName": "Expansions",
-            "effect": "Effect"
-        },
-    },
-    [Category.Discovery]: {
-        [Info.Division]: Division.Economy,
-        [Info.Trait]: [Trait.Learner],
-        "headerColor": "rgb(240,248,255)",
-        "headerData": {
-            "categoryName": "Discovery",
-            "levelName": "Movements",
-            "effect": "Effect"
-        },
-    }
-}
+var objects = {
+    [Trait.Crops]: new TraitObject(baseData[Trait.Crops]),
+    [Trait.Fields]: new TraitObject(baseData[Trait.Fields]),
+    [Trait.Barns]: new TraitObject(baseData[Trait.Barns]),
+    [Trait.Learner]: new TraitObject(baseData[Trait.Learner]),
 
-var traits = {
-    [Trait.Crops]: {
-        [Info.Division]: Division.Economy,
-        [Info.Category]: Category.Growth,
-        [Info.Object]: new TraitObject({
-            type: Trait.Crops,
-            maxXp: 100,
-            affects: {[Resource.Population]: (level: number) => 1 + (level * 0.1)},
-            scaling: (level: number) => Math.pow(1.01, level) + 0.1 * level,
-        })
-    },
-    [Trait.Fields]: {
-        [Info.Division]: Division.Economy,
-        [Info.Category]: Category.Growth,
-        [Info.Object]: new TraitObject({
-            requirements: [new Requirement(Trait.Crops, 5)],
-            type: Trait.Fields,
-            maxXp: 500,
-            affects: {[Trait.Crops]: (level: number) => 1 + (level * 0.2)},
-            scaling: (level: number) => Math.pow(1.02, level) + 0.2 * level,
-        })
-    },
-    [Trait.Barns]: {
-        [Info.Division]: Division.Economy,
-        [Info.Category]: Category.Growth,
-        [Info.Object]: new TraitObject({
-            requirements: [new Requirement(Trait.Fields, 10)],
-            type: Trait.Barns,
-            maxXp: 2500,
-            affects: {[Trait.Fields]: (level: number) => 1 + (level * 0.5)},
-            scaling: (level: number) => Math.pow(1.05, level) + 0.5 * level,
-        })
-    },
-    [Trait.Learner]: {
-        [Info.Division]: Division.Economy,
-        [Info.Category]: Category.Discovery,
-        [Info.Object]: new TraitObject({
-            requirements: [new Requirement(Resource.Population, 100)],
-            type: Trait.Learner,
-            maxXp: 500,
-            affects: {[Trait.Fields]: (level: number) => 1 + (level * 0.5)},
-            scaling: (level: number) => Math.pow(1.05, level) + 0.5 * level,
-        })
-    }
-}
-
-var resources = {
-    [Resource.Resources]: new ResourceObject({
-        type: Resource.Time,
-        baseIncome: 365/900,
-        display: setTimeDisplay
-    }),
-    [Resource.Population]: new ResourceObject({
-        type: Resource.Population,
-        amount: 1,
-        baseIncome: 0.1,
-        xpAffects: universalAffect((s:number, r:number) => Math.pow(Math.floor(s), 0.75), true)
-    }),
-    [Resource.Science]: new ResourceObject({
-        type: Resource.Science,
-        baseIncome: 0.1,
-        requirements: [new Requirement(Resource.Population, 100)]
-    }),
-    [Resource.Resources]: new ResourceObject({
-        type: Resource.Resources,
-        baseIncome: 1,
-        requirements: [new Requirement(Resource.Population, 1000)],
-        display: setResourceDisplay
-    }),
-    [Resource.Population]: new ResourceObject({
-        type: Resource.Rebirths,
-        amount: 0,
-        baseIncome: 0
-    }),
+    [Resource.Time]: new ResourceObject(baseData[Resource.Time]),
+    [Resource.Population]: new ResourceObject(baseData[Resource.Population]),
+    [Resource.Science]: new ResourceObject(baseData[Resource.Science]),
+    [Resource.Capital]: new ResourceObject(baseData[Resource.Capital]),
+    [Resource.Rebirths]: new ResourceObject(baseData[Resource.Rebirths])
 }
 
 const updateSpeed = 20
 const baseGameSpeed = 1
 
 const units = ["", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "Nn"];
-
-var gameData = {
-    gameObjects: [] as GameObject[],
-    focus: Trait.Crops,
-    economy: {},
-    technology: {},
-    military: {}
-}
 
 function update() {
     for (let key in GameObject.objects) {
@@ -185,10 +203,13 @@ function selectTrait(trait: Trait) {
     TraitObject.traitObjects[trait].select()
 }
 
-function universalAffect(f: (s: number, r:number) => number, xpOnly: boolean = false) {
+function universalAffect(f: (s: number, r:number) => number, xpOnly: boolean = false, exclude: Progression[] = []) {
     let affects = {} as {[key in Progression]: (s: number, r:number) => number}
     for (let t of Object.values(Trait)) {
-        let trait_key = t as Progression
+        let trait_key = t as Trait
+        if (!(trait_key in exclude)) {
+            affects[trait_key] = f
+        }
         affects[trait_key] = f
     }
     if (xpOnly) {
@@ -196,13 +217,15 @@ function universalAffect(f: (s: number, r:number) => number, xpOnly: boolean = f
     }
     for (let r of Object.values(Resource)) {
         let resource_key = r as Resource
-        affects[resource_key] = f
+        if (!(resource_key in exclude)) {
+            affects[resource_key] = f
+        }
     }
     return affects
 }
 
 function categoryUnlocked(c: Category) {
-    for (let t of categories[c][Info.Trait]) {
+    for (let t of metadata[c][Info.Trait]) {
         let traitKey = t as keyof typeof GameObject.objects
         if (GameObject.objects[traitKey].isUnlocked()) {
             return true
@@ -212,7 +235,7 @@ function categoryUnlocked(c: Category) {
 }
 
 function divisionUnlocked(d: Division) {
-    for (let c of divisions[d][Info.Category]) {
+    for (let c of metadata[d][Info.Category]) {
         if (categoryUnlocked(c as Category)) {
             return true
         }
@@ -223,9 +246,9 @@ function divisionUnlocked(d: Division) {
 function updateDivisions() {
     for (let d of Object.values(Division)) {
         if (divisionUnlocked(d)) {
-            divisions[d].button!.style.display = ""
+            metadata[d].button!.style.display = ""
         } else {
-            divisions[d].button!.style.display = "none"
+            metadata[d].button!.style.display = "none"
         }
     }
 }
@@ -243,13 +266,13 @@ function updateCategories() {
 function createHeaderRow(category: Category): HTMLTableRowElement {
     var template = document.getElementById("headerTemplate") as HTMLTemplateElement
     var headerRow = template.content.firstElementChild!.cloneNode(true) as HTMLTableRowElement
-    var data = categories[category]["headerData"]
-    for (let name in categories[category]["headerData"]) {
+    var data = metadata[category]["headerData"]
+    for (let name in metadata[category]["headerData"]) {
         let key = name as keyof typeof data
         headerRow.getElementsByClassName(name)[0].textContent = data[key]
     }
     var unlocked = false
-    for (let t of categories[category][Info.Trait]) {
+    for (let t of metadata[category][Info.Trait]) {
         let traitKey = t as keyof typeof GameObject.objects
         if (GameObject.objects[traitKey].isUnlocked()) {
             unlocked = true
@@ -258,10 +281,11 @@ function createHeaderRow(category: Category): HTMLTableRowElement {
     if (!unlocked) {
         headerRow.style.display = "none"
     }
-    headerRow.style.backgroundColor = categories[category]["headerColor"]
+    headerRow.style.backgroundColor = metadata[category]["headerColor"]
     headerRow.style.color = "#FFFFFF"
     headerRow.id = category.toLowerCase()
-    var HTMLTable = divisions[categories[category][Info.Division]]["table"]
+    let division = metadata[category][Info.Division]
+    var HTMLTable = metadata[division]["table"]
     HTMLTable?.append(headerRow)
     return headerRow
 }
@@ -277,20 +301,20 @@ function createRow(trait: Trait) {
     if (!obj.isUnlocked()) {
         row.style.display = "none"
     }
-    var HTMLTable = divisions[traits[trait][Info.Division]]["table"]
+    let division = metadata[trait][Info.Division]
+    var HTMLTable = metadata[division]["table"]
     HTMLTable?.append(row)
     return row
 }
 
 function createRowsFromCategory(category: Category) {
-    for (let t of categories[category][Info.Trait]) {
-        createRow(t as Trait)
+    for (let trait of metadata[category][Info.Trait]) {
+        createRow(trait)
     }
 }
 
 function createAllRows() {
-    for (let c in categories) {
-        let category = c as keyof typeof categories
+    for (let category of Object.values(Category)) {
         createHeaderRow(category)
         createRowsFromCategory(category)
     }
@@ -345,8 +369,8 @@ function format(value: number, decimals: number = 0): string {
     return floor(value / Math.pow(10, tier*3), 1) + suffix
 }
 
-function setResourceDisplay(resources: number): void {
-    var resourceHTML = document.getElementById("resources")
+function setCapitalDisplay(capital: number): void {
+    var capitalHTML = document.getElementById("capital")
     var tiers = ["p", "g", "s", "c"]
     var colors: { [tier: string] : string } = {
         "p": "#79b9c7",
@@ -357,9 +381,9 @@ function setResourceDisplay(resources: number): void {
     var i = 0
     for (let tier of tiers) {
         var base = Math.pow(10, (tiers.length - i - 1) * 2)
-        var coins = Math.floor(resources / base)
-        resources = resources - coins * base
-        var tierHTML = resourceHTML!.children[i] as HTMLSpanElement
+        var coins = Math.floor(capital / base)
+        capital = capital - coins * base
+        var tierHTML = capitalHTML!.children[i] as HTMLSpanElement
         if (tier == "c") {
             tierHTML.textContent = format(coins) + tier
         } else {
@@ -399,10 +423,29 @@ function applySpeed(value: number): number {
     return value / updateSpeed * getSpeed()
 }
 
+// function save() {
+//     localStorage.setItem('gameObjects', JSON.stringify(GameObject.objects))
+//     localStorage.setItem('resourceObjects', JSON.stringify(ResourceObject.resourceObjects))
+//     localStorage.setItem('traitObjects', JSON.stringify(TraitObject.traitObjects))
+// }
+  
+// function load() {
+//     GameObject.objects = JSON.parse(localStorage.getItem('gameObjects') as string)
+//     ResourceObject.resourceObjects = JSON.parse(localStorage.getItem('resourceObjects') as string)
+//     TraitObject.traitObjects = JSON.parse(localStorage.getItem('traitObjects') as string)
+//     for (let o in GameObject.objects) {
+//         let objectKey = o as keyof typeof objects
+//         let gameObject = objectKey[objectKey]
+//     }
+// }
+
+
 createAllRows()
 selectTrait(Trait.Crops)
-setTab(document.getElementById("economyButton"), "economy")
+setTab(document.getElementById("economyButton") as HTMLSpanElement, "economy")
+//load()
 setInterval(update, 1000 / updateSpeed)
+//setInterval(save, 3000)
 
 var canvas = document.querySelector('canvas') as HTMLCanvasElement
 var c = canvas.getContext('2d')

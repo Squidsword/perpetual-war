@@ -37,6 +37,9 @@ class GameObject {
     constructor(baseData: {[str: string]: any}) {
         this.baseData = baseData
         this.type = baseData.type
+        if ('bonuses' in baseData) {
+            this.bonuses = baseData.bonuses
+        }
         if ('requirements' in baseData) {
             this.requirements = baseData.requirements
         }
@@ -50,6 +53,22 @@ class GameObject {
             this.amount = baseData.amount
         }
         GameObject.objects[this.type] = this
+    }
+
+    setFunctions(baseData: {[str: string]: any}) {
+        if ('bonuses' in baseData) {
+            this.bonuses = baseData.bonuses
+        }
+        if ('requirements' in baseData) {
+            this.requirements = baseData.requirements
+        }
+        if ('affects' in baseData) {
+            this.affects = baseData.affects
+        }
+        if ('xpAffects' in baseData) {
+            this.xpAffects = baseData.xpAffects
+        }
+
     }
 
     getName() {
@@ -248,7 +267,7 @@ class TraitObject extends GameObject implements XPObject {
         }
 
         row!.getElementsByClassName("level")[0].textContent = format(this.amount)
-        row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXpGain(), 1)
+        row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXpGain())
 
         for (let r in this.affects) {
             let receiver_key = r as keyof typeof GameObject.objects
