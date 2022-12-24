@@ -13,6 +13,11 @@ enum Division {
     Military = "MILITARY",
 }
 
+enum EffectType {
+    Power = "POWER",
+    Speed = "SPEED"
+}
+
 enum Resource {
     Time = "TIME",
     Population = "POPULATION",
@@ -41,42 +46,36 @@ enum Category {
 }
 
 type Progression = Resource | Research | Building
-type XP = Building
 
 const baseData = {
     [Building.Crops]: {
         type: Building.Crops,
         maxXp: 100,
-        affects: {[Resource.Population]: (level: number) => 1 + (level * 0.1)},
-        scaling: (level: number) => Math.pow(1.01, level) + 0.1 * level,
+        scaling: (level: number) => Math.pow(1.01, level) + 0.2 * level,
     },
     [Building.Fields]: {
-        requirements: [new Requirement(Building.Crops, 5)],
+        requirements: new RequirementList([new Requirement(Building.Crops, 5)]),
         type: Building.Fields,
-        maxXp: 1000,
-        affects: {[Building.Crops]: (level: number) => 1 + (level * 0.2)},
-        scaling: (level: number) => Math.pow(1.02, level) + 0.2 * level,
+        maxXp: 2000,
+        scaling: (level: number) => Math.pow(1.02, level) + 0.35 * level,
     }, 
     [Building.Barns]: {
-        requirements: [new Requirement(Building.Fields, 10)],
+        requirements: new RequirementList([new Requirement(Building.Fields, 10)]),
         type: Building.Barns,
-        maxXp: 10000,
-        affects: {[Building.Fields]: (level: number) => 1 + (level * 0.5)},
+        maxXp: 50000,
         scaling: (level: number) => Math.pow(1.05, level) + 0.5 * level,
     },
     [Building.Learner]: {
-        requirements: [new Requirement(Resource.Population, 100)],
+        requirements: new RequirementList([new Requirement(Resource.Population, 100)]),
         type: Building.Learner,
         maxXp: 500,
-        affects: {[Resource.Science]: (level: number) => 1 + (level * 0.1)},
-        scaling: (level: number) => Math.pow(1.01, level) + 0.1 * level,
+        scaling: (level: number) => Math.pow(1.01, level) + 0.2 * level,
     },
     [Research.SeedDiversity]: {
-        requirements: [new Requirement(Resource.Science, 1)],
+        requirements: new RequirementList([new Requirement(Resource.Population, 100)]),
         type: Research.SeedDiversity,
         maxXp: 1000,
-        affects: {[Building.Crops]: (level: number) => 1 + (level * 0.1)},
-        scaling: (level: number) => Math.pow(1.01, level) + 0.1 * level,
+        scaling: (level: number) => Math.pow(1.01, level) + 0.35 * level,
     },
     [Resource.Time]: {
         type: Resource.Time,
@@ -86,19 +85,14 @@ const baseData = {
     [Resource.Population]: {
         type: Resource.Population,
         amount: 1,
-        baseIncome: 0.03,
-        xpAffects: affect(Object.values(Building), (s:number, r:number) => Math.pow(Math.floor(s), 0.75))
     },
     [Resource.Science]: {
         type: Resource.Science,
-        baseIncome: 0.01,
-        requirements: [new Requirement(Resource.Population, 100)],
-        xpAffects: affect(Object.values(Research), (s:number, r:number) => Math.pow(Math.floor(s), 0.75))
+        requirements: new RequirementList([new Requirement(Resource.Population, 100)]),
     },
     [Resource.Capital]: {
         type: Resource.Capital,
-        baseIncome: 0.001,
-        requirements: [new Requirement(Resource.Population, 1000)],
+        requirements: new RequirementList([new Requirement(Resource.Population, 1000)]),
         display: setCapitalDisplay
     },
     [Resource.Rebirths]: {
@@ -107,6 +101,45 @@ const baseData = {
         baseIncome: 0
     },
 }
+
+const effectData = {
+    [Building.Crops]: {
+        affects: [Resource.Population],
+        effectType: EffectType.Speed,
+        additive: (level: number, effectiveLevel: number) => 0.05 * effectiveLevel
+    },
+    [Building.Fields]: {
+        affects: [Building.Crops],
+        effectType: EffectType.Power,
+        multiplicative: (level: number, effectiveLevel: number) => 1 + (effectiveLevel * 0.2)
+    },
+    [Building.Barns]: {
+        affects: [Building.Fields],
+        effectType: EffectType.Power,
+        multiplicative: (level: number, effectiveLevel: number) => 1 + (effectiveLevel * 0.5)
+    },
+    [Building.Learner]: {
+        affects: [Resource.Science],
+        effectType: EffectType.Speed,
+        additive: (level: number, effectiveLevel: number) => 0.01 * effectiveLevel
+    },
+    [Research.SeedDiversity]: {
+        affects: [Building.Crops],
+        effectType: EffectType.Power,
+        multiplicative: (level: number, effectiveLevel: number) => 1 + (level * 0.1)
+    },
+    [Resource.Population]: {
+        affects: Object.values(Building),
+        effectType: EffectType.Speed,
+        multiplicative: (level: number, effectiveLevel: number) => Math.pow(Math.floor(level), 0.75)
+    },
+    [Resource.Science]: {
+        affects: Object.values(Research),
+        effectType: EffectType.Speed,
+        multiplicative: (level: number, effectiveLevel: number) => Math.pow(Math.floor(level), 0.75)
+    },
+}
+
 
 const metadata = {
     [Division.Economy]: {
@@ -207,7 +240,7 @@ const metadata = {
     },
 }
 
-var objects = {
+const objects = {
     [Building.Crops]: new LevelObject(baseData[Building.Crops]),
     [Building.Fields]: new LevelObject(baseData[Building.Fields]),
     [Building.Barns]: new LevelObject(baseData[Building.Barns]),
@@ -258,16 +291,31 @@ function selectResearch(research: Research) {
     objects[research].select()
 }
 
-function affect(keys: Progression[], f: (s: number, r:number) => number, exclude = [] as Progression[]) {
-    let affects = {} as {[key in Progression]: (s: number, r:number) => number}
-    for (let k of keys) {
+function createEffect(sourceKey: Progression, receiverKeys: Progression[], effectData: {
+    affects: Progression[],
+    effectType: EffectType,
+    additive?: (value: number, effectiveValue: number) => number,
+    multiplcative?: (value: number, effectiveValue: number) => number,
+    exponential?: (value: number, effectiveValue: number) => number,
+}, exclude = [] as Progression[]) {
+
+    let effect = new Effect(sourceKey, receiverKeys, effectData)
+    let source = objects[sourceKey]
+    for (let k of receiverKeys) {
         let key = k as Progression
         if (key in exclude) {
             continue
         }
-        affects[key] = f
+        source.sendAffect(key, effect)
     }
-    return affects
+}
+
+function createAllEffects() {
+    for (let k in effectData) {
+        let key = k as keyof typeof effectData
+        let data = effectData[key]
+        createEffect(key, data.affects, data)
+    }
 }
 
 function categoryUnlocked(c: Category) {
@@ -487,8 +535,12 @@ function load() {
     }
 }
 
+function resetGame() {
+    
+}
 
 createAllRows()
+createAllEffects()
 selectBuilding(Building.Crops)
 setTab(document.getElementById("economyButton") as HTMLSpanElement, "economy")
 load()

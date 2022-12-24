@@ -1,12 +1,3 @@
-interface XPObject {
-    xpMultipliers: {[key in Progression]: (s: number, r: number) => number}
-    receiveXpMultiplier(source: Progression, effect: (s: number, r:number) => number): void
-}
-
-function instanceOfXP(object: any): object is XPObject {
-    return 'receiveXpMultiplier' in object
-}
-
 class Requirement {
     type: Progression
     threshold: number
@@ -17,110 +8,16 @@ class Requirement {
     }
 
     isSatisfied() {
-        return objects[this.type].amount >= this.threshold
+        return objects[this.type].getValue() >= this.threshold
     }
 
 }
 
-class GameEvent {
+class RequirementList {
+    requirements: Requirement[]
 
-}
-
-class GameObject {
-    baseData: {[str: string]: any}
-    type: Progression
-    bonuses = {} as {[key in Progression]: (s: number, r: number) => number}
-    multipliers = {} as {[key in Progression]: (s: number, r: number) => number}
-    affects = {} as {[key in Progression]: (s: number, r: number) => number}
-    xpAffects = {} as {[key in Progression]: (s: number, r: number) => number}
-    requirements = [] as Requirement[]
-    amount = 0
-
-    constructor(baseData: {[str: string]: any}) {
-        this.baseData = baseData
-        this.type = baseData.type
-        if ('bonuses' in baseData) {
-            this.bonuses = baseData.bonuses
-        }
-        if ('requirements' in baseData) {
-            this.requirements = baseData.requirements
-        }
-        if ('affects' in baseData) {
-            this.affects = baseData.affects
-        }
-        if ('xpAffects' in baseData) {
-            this.xpAffects = baseData.xpAffects
-        }
-        if ('amount' in baseData) {
-            this.amount = baseData.amount
-        }
-    }
-
-    update() {
-        this.sendAllMultipliers()
-    }
-
-    getName() {
-        return this.type.toLowerCase().split('_').filter(x => x.length > 0).map(x => (x.charAt(0).toUpperCase() + x.slice(1))).join(" ")
-    }
-
-    getID() {
-        return this.type.toLowerCase()
-    }
-
-    getEffectiveAmount() {
-        return applyMultipliers(this.amount, this.calculateMultipliers())
-    }
-
-    receiveMultiplier(sourceKey: Progression, effect: (sl: number, dl:number) => number) {
-        this.multipliers[sourceKey] = effect
-    }
-
-    receiveBonus(sourceKey: Progression, effect: (sl: number, dl:number) => number) {
-        this.bonuses[sourceKey] = effect
-    }
-
-    sendMultiplier(receiverKey: Progression, effect: (sl: number, dl:number) => number) {
-        objects[receiverKey].receiveMultiplier(this.type, effect)
-    }
-
-    sendXpMultiplier(receiverKey: Progression, effect: (sl: number, dl:number) => number) {
-        let receiver = objects[receiverKey]
-        if (instanceOfXP(receiver)) {
-            receiver.receiveXpMultiplier(this.type, effect)
-        }
-    }
-
-    sendAllMultipliers() {
-        for (let r in this.affects) {
-            let receiverKey = r as keyof typeof objects
-            this.sendMultiplier(receiverKey, this.affects[receiverKey])
-        }
-        for (let r in this.xpAffects) {
-            let receiverKey = r as keyof typeof objects
-            this.sendXpMultiplier(receiverKey, this.xpAffects[receiverKey])
-        }
-    }
-
-    sendBonus(destination: Progression, effect: (sl: number, dl:number) => number) {
-        objects[destination].bonuses[this.type] = effect
-    }
-
-    calculateEffect(r: Progression): number {
-        let reveiver_key = r as keyof typeof objects
-        let receiver = objects[reveiver_key]
-        return this.affects[r](this.getEffectiveAmount(), receiver.amount)
-    }
-
-    calculateMultipliers(multiplierMap = this.multipliers): number[] {
-        var multipliers = [] as number[]
-        for (let s in multiplierMap) {
-            let source_key = s as keyof typeof objects
-            let source = objects[source_key]
-            let multiplier = multiplierMap[source_key](source.getEffectiveAmount(), this.amount)
-            multipliers.push(multiplier)
-        }
-        return multipliers
+    constructor(requirements: Requirement[] = []) {
+        this.requirements = requirements
     }
 
     isUnlocked() {
@@ -131,48 +28,246 @@ class GameObject {
         }
         return true
     }
+}
 
-    load(copyObj: any) {
-        this.amount = copyObj.amount
+class Effect {
+    source: Progression
+    receivers: Progression[]
+    requirements: RequirementList
+    effectType: EffectType
+    additive?: (value: number, effectiveValue: number) => number
+    multiplicative?: (value: number, effectiveValue: number) => number
+    exponential?: (value: number, effectiveValue: number) => number
+
+    constructor(source: Progression, receivers: Progression[], baseData: {
+        requirements?: RequirementList,
+        effectType: EffectType,
+        additive?: (value: number, effectiveValue: number) => number,
+        multiplicative?: (value: number, effectiveValue: number) => number,
+        exponential?: (value: number, effectiveValue: number) => number
+    }) {
+        this.source = source
+        this.receivers = receivers
+        this.requirements = baseData.requirements ? baseData.requirements : new RequirementList()
+        this.effectType = baseData.effectType
+        this.additive = baseData.additive
+        this.multiplicative = baseData.multiplicative
+        this.exponential = baseData.exponential
+    }
+
+    setSource(key: Progression) {
+        this.source = key
+    }
+
+    setReceivers(keys: Progression[]) {
+        this.receivers = keys
+    }
+
+    constant() {
+        if (this.additive == undefined) {
+            return 0
+        }
+        let src = objects[this.source]
+        return this.additive(src.getValue(), src.getEffectiveValue())
+    }
+
+    scalar() {
+        if (this.multiplicative == undefined) {
+            return 1
+        }
+        let src = objects[this.source]
+        return this.multiplicative(src.getValue(), src.getEffectiveValue())
+    }
+
+    power() {
+        if (this.exponential == undefined) {
+            return 1
+        }
+        let src = objects[this.source]
+        return this.exponential(src.getValue(), src.getEffectiveValue())
+    }
+
+    description() {
+        let description = ``
+        if (this.additive) {
+            description += `+${format(this.constant(), 2)} ${objects[this.receivers[0]].getName()}`
+        }
+        if (this.multiplicative) {
+            description += `x${format(this.scalar(), 2)} ${objects[this.receivers[0]].getName()}`
+        }
+        if (this.exponential) {
+            description += `^${format(this.power(), 3)} ${objects[this.receivers[0]].getName()}`
+        }
+        return description
     }
 
 }
 
+class AffectMap {
+    affects: {[key in Progression]: Effect}
+
+    constructor(affects = {} as {[key in Progression]: Effect}) {
+        this.affects = affects
+    }
+
+    setAffect(key: Progression, effect: Effect) {
+        this.affects[key] = effect
+    }
+
+    getAffect(key: Progression) {
+        return this.affects[key]
+    }
+
+}
+
+class EffectMap {
+    effects: {[key in Progression]: Effect}
+
+    constructor(effects = {} as {[key in Progression]: Effect}) {
+        this.effects = effects
+    }
+
+    setEffect(key: Progression, effect: Effect) {
+        this.effects[key] = effect
+    }
+
+    getEffect(key: Progression) {
+        return this.effects[key]
+    }
+
+    applyAdditive(value: number, type: EffectType) {
+        for (let e in this.effects) {
+            let effectKey = e as Progression
+            let effect = this.effects[effectKey]
+            if (effect.requirements.isUnlocked() && effect.effectType == type) {
+                value += effect.constant()
+            }
+        }
+        return value
+    }
+
+    applyMultiplicative(value: number, type: EffectType) {
+        for (let e in this.effects) {
+            let effectKey = e as Progression
+            let effect = this.effects[effectKey]
+            if (effect.requirements.isUnlocked() && effect.effectType == type) {
+                value *= effect.scalar()
+            }
+        }
+        return value
+    }
+
+    applyExponential(value: number, type: EffectType) {
+        for (let e in this.effects) {
+            let effectKey = e as Progression
+            let effect = this.effects[effectKey]
+            if (effect.requirements.isUnlocked() && effect.effectType == type) {
+                value = Math.pow(value, effect.power())
+            }
+        }
+        return value
+    }
+
+    applyEffects(value = 0, type: EffectType) {
+        value = this.applyAdditive(value, type)
+        value = this.applyMultiplicative(value, type)
+        value = this.applyExponential(value, type)
+        return value
+    }
+}
+
+class GameEvent {
+
+}
+
+abstract class GameObject {
+    type: Progression
+    requirements: RequirementList
+    effectMap: EffectMap
+    affectMap: AffectMap
+
+    constructor(baseData: {
+        type: Progression,
+        requirements?: RequirementList,
+    }) {
+        this.type = baseData.type
+        this.requirements = baseData.requirements ? baseData.requirements : new RequirementList()
+        this.effectMap = new EffectMap()
+        this.affectMap = new AffectMap()
+    }
+
+    getName() {
+        return this.type.toLowerCase().split('_').filter(x => x.length > 0).map(x => (x.charAt(0).toUpperCase() + x.slice(1))).join(" ")
+    }
+
+    getID() {
+        return this.type.toLowerCase()
+    }
+
+    sendAffect(receiverKey: Progression, effect: Effect) {
+        this.affectMap.setAffect(receiverKey, effect)
+        objects[receiverKey].effectMap.setEffect(this.type, effect)
+    }
+
+    applyEffects(value = 0, type: EffectType) {
+        return this.effectMap.applyEffects(value, type)
+    }
+
+    isUnlocked() {
+        return this.requirements.isUnlocked()
+    }
+
+    abstract update(): void
+
+    abstract load(copyObj: any): void
+
+    abstract getValue(): number
+
+    abstract getEffectiveValue(): number
+}
+
 class ResourceObject extends GameObject {
-    baseIncome = 0
+    baseIncome: number
+    amount: number
     display?: (amount: number) => void
 
-    constructor(baseData: {[str: string]: any}) {
+    constructor(baseData: {
+        type: Progression,
+        requirements?: RequirementList,
+        affects?: EffectMap,
+        baseIncome?: number,
+        amount?: number, 
+        display?: (amount: number) => void
+    }) {
         super(baseData)
-        if ('baseIncome' in baseData) {
-            this.baseIncome = baseData.baseIncome
-        }
-        if ('display' in baseData) {
-            this.display = baseData.display
-        }
+        this.baseIncome = baseData.baseIncome ? baseData.baseIncome : 0
+        this.amount = baseData.amount ? baseData.amount : 0
+        this.display = baseData.display
     }
 
     update() {
-        super.update()
         this.increaseAmount()
-        this.sendAllMultipliers()
         this.updateDisplay()
     }
 
-    getBonus() {
-
-    }
-
-    getEffectiveAmount() {
+    getValue(): number {
         return this.amount
     }
 
-    getFinalIncome() {
-        return applyMultipliers(this.baseIncome, this.calculateMultipliers())
+    getEffectiveValue(): number {
+        return this.amount
+    }
+
+    getIncome(): number {
+        return this.applyEffects(this.baseIncome, EffectType.Speed)
     }
  
     increaseAmount() {
-        this.amount += applySpeed(this.getFinalIncome())
+        this.amount += applySpeed(this.getIncome())
+    }
+
+    load(copyObj: any): void {
+        this.amount = copyObj.amount
     }
 
     updateDisplay() {
@@ -196,16 +291,26 @@ class ResourceObject extends GameObject {
     }
 }
 
-class LevelObject extends GameObject implements XPObject {
+class LevelObject extends GameObject {
     baseMaxXp: number
     scaling: (l: number) => number
-    xpMultipliers = {} as {[key in Progression]: (s: number, r: number) => number}
 
-    xp = 0
+    level: number
+    xp: number
     maxXp: number
     selected = false
-    constructor(baseData: {[str: string] : any}) {
+    constructor(baseData: {
+        type: Progression,
+        level?: number
+        xp?: number
+        requirements?: RequirementList,
+        affects?: EffectMap,
+        maxXp: number,
+        scaling: (l: number) => number
+    }) {
         super(baseData)
+        this.level = baseData.level ? baseData.level : 0
+        this.xp = baseData.xp ? baseData.xp : 0
         this.baseMaxXp = baseData.maxXp
         this.maxXp = baseData.maxXp
         this.scaling = baseData.scaling
@@ -213,26 +318,29 @@ class LevelObject extends GameObject implements XPObject {
 
     update() {
         if (this.isUnlocked()) {
-            super.update()
             this.updateXp()
             this.updateLevel()
         }
         this.updateRow()
     }
 
-    getXpGain() {
-        return applyMultipliers(10, this.calculateMultipliers(this.xpMultipliers))
+    getXpGain(): number {
+        return this.applyEffects(10, EffectType.Speed)
     }
 
-    receiveXpMultiplier(source: Progression, effect: (s: number, r: number) => number): void {
-        this.xpMultipliers[source] = effect
+    getValue(): number {
+        return this.level
+    }
+
+    getEffectiveValue(): number {
+        return this.applyEffects(this.level, EffectType.Power)
     }
 
     select() {
         this.selected = true
     }
 
-    isSelected() {
+    isSelected(): boolean {
         return this.selected
     }
 
@@ -245,8 +353,8 @@ class LevelObject extends GameObject implements XPObject {
     updateLevel() {
         while (this.xp >= this.maxXp) {
             this.xp -= this.maxXp
-            this.amount += 1
-            this.maxXp = this.baseMaxXp * this.scaling(this.amount)
+            this.level += 1
+            this.maxXp = this.baseMaxXp * this.scaling(this.level)
         }
     }
 
@@ -257,13 +365,12 @@ class LevelObject extends GameObject implements XPObject {
             row!.style.display = ""
         }
 
-        row!.getElementsByClassName("level")[0].textContent = format(this.amount)
+        row!.getElementsByClassName("level")[0].textContent = format(this.level)
         row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXpGain())
 
-        for (let r in this.affects) {
-            let receiver_key = r as keyof typeof objects
-            let receiver = objects[receiver_key]
-            row!.getElementsByClassName("effect")[0].textContent = `${format(this.calculateEffect(receiver_key), 1)}x ${receiver.getName()}`
+        for (let r in this.affectMap.affects) {
+            let receiverKey = r as keyof typeof objects
+            row!.getElementsByClassName("effect")[0].textContent = `${this.affectMap.getAffect(receiverKey).description()}`
         }
 
         row!.getElementsByClassName("xpLeft")[0].textContent = format(this.maxXp - this.xp)
@@ -277,99 +384,10 @@ class LevelObject extends GameObject implements XPObject {
     }
 
     load(copyObj: any) {
-        super.load(copyObj)
+        this.level = copyObj.level
         this.xp = copyObj.xp
         this.maxXp = copyObj.maxXp
         this.selected = copyObj.selected
     }
 
 }
-
-// class ResearchObject extends GameObject implements XPObject {
-//     requiredXp: number
-//     overcapScaling: (timesHigher: number) => number
-//     xpMultipliers = {} as {[key in Progression]: (s: number, r: number) => number}
-
-//     xp = 0
-//     selected = false
-//     constructor(baseData: {[str: string] : any}) {
-//         super(baseData)
-//         this.requiredXp = baseData.requiredXp
-//         this.overcapScaling = baseData.overcapScaling
-//     }
-
-//     update() {
-//         if (this.isUnlocked()) {
-//             super.update()
-//             this.updateXp()
-//         }
-//         this.updateRow()
-//     }
-
-//     getXpGain() {
-//         return applyMultipliers(10, this.calculateMultipliers(this.xpMultipliers))
-//     }
-
-//     receiveXpMultiplier(source: Progression, effect: (s: number, r: number) => number): void {
-//         this.xpMultipliers[source] = effect
-//     }
-
-//     select() {
-//         this.selected = true
-//     }
-
-//     isSelected() {
-//         return this.selected
-//     }
-
-//     updateXp() {
-//         if (this.isSelected()) {
-//             this.xp += applySpeed(this.getXpGain())
-//         }
-//     }
-
-//     isComplete() {
-//         return this.xp >= this.requiredXp
-//     }
-
-//     updateMultiplier() {
-//         if (!this.isComplete()) {
-//             return
-//         }
-
-//     }
-
-//     updateRow() {
-//         var row = document.getElementById(this.getID())
-
-//         if (this.isUnlocked()) {
-//             row!.style.display = ""
-//         } else {
-//             row!.style.display = "none"
-//         }
-
-//         row!.getElementsByClassName("level")[0].textContent = format(this.amount)
-//         row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXpGain())
-
-//         for (let r in this.affects) {
-//             let receiver_key = r as keyof typeof objects
-//             let receiver = objects[receiver_key]
-//             row!.getElementsByClassName("effect")[0].textContent = `${format(this.calculateEffect(receiver_key), 1)}x ${receiver.getName()}`
-//         }
-
-//         row!.getElementsByClassName("xpLeft")[0].textContent = format(this.requiredXp - this.xp)
-//         var bar = (row!.getElementsByClassName("progressFill")[0] as HTMLDivElement)
-//         bar.style.width = `${Math.max(100, 100 * this.xp / this.requiredXp)}%`
-//         if (this.isSelected()) {
-//             bar.classList.add('selected')
-//         } else {
-//             bar.classList.remove('selected')
-//         }
-//     }
-
-//     load(copyObj: any) {
-//         super.load(copyObj)
-//         this.xp = copyObj.xp
-//         this.selected = copyObj.selected
-//     }
-// }
