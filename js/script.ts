@@ -57,13 +57,13 @@ const baseData = {
         requirements: new RequirementList([new Requirement(Building.Crops, 5)]),
         type: Building.Fields,
         maxXp: 2000,
-        scaling: (level: number) => Math.pow(1.02, level) + 0.35 * level,
+        scaling: (level: number) => Math.pow(1.01, level) + 0.2 * level,
     }, 
     [Building.Barns]: {
         requirements: new RequirementList([new Requirement(Building.Fields, 10)]),
         type: Building.Barns,
-        maxXp: 50000,
-        scaling: (level: number) => Math.pow(1.05, level) + 0.5 * level,
+        maxXp: 20000,
+        scaling: (level: number) => Math.pow(1.01, level) + 0.2 * level,
     },
     [Building.Learner]: {
         requirements: new RequirementList([new Requirement(Resource.Population, 100)]),
@@ -106,37 +106,38 @@ const effectData = {
     [Building.Crops]: {
         affects: [Resource.Population],
         effectType: EffectType.Speed,
-        additive: (level: number, effectiveLevel: number) => 0.05 * effectiveLevel
+        additive: () => 0.02 * objects[Building.Crops].getEffectiveValue()
     },
     [Building.Fields]: {
-        affects: [Building.Crops],
+        affects: [Resource.Population],
         effectType: EffectType.Power,
-        multiplicative: (level: number, effectiveLevel: number) => 1 + (effectiveLevel * 0.2)
+        additive: () => 0.1 * objects[Building.Fields].getEffectiveValue()
     },
     [Building.Barns]: {
-        affects: [Building.Fields],
+        affects: [Resource.Population],
         effectType: EffectType.Power,
-        multiplicative: (level: number, effectiveLevel: number) => 1 + (effectiveLevel * 0.5)
+        additive: () => 1 * objects[Building.Barns].getEffectiveValue()
     },
     [Building.Learner]: {
         affects: [Resource.Science],
         effectType: EffectType.Speed,
-        additive: (level: number, effectiveLevel: number) => 0.01 * effectiveLevel
+        additive: () => 0.01 * objects[Building.Learner].getEffectiveValue()
     },
     [Research.SeedDiversity]: {
         affects: [Building.Crops],
         effectType: EffectType.Power,
-        multiplicative: (level: number, effectiveLevel: number) => 1 + (level * 0.1)
+        requirements: new RequirementList([new Requirement(Research.SeedDiversity, 1)]),
+        multiplicative: () => 2 + objects[Building.Fields].getEffectiveValue() * 0.1
     },
     [Resource.Population]: {
         affects: Object.values(Building),
         effectType: EffectType.Speed,
-        multiplicative: (level: number, effectiveLevel: number) => Math.pow(Math.floor(level), 0.75)
+        multiplicative: () => Math.pow(Math.floor(objects[Resource.Population].getEffectiveValue()), 0.75)
     },
     [Resource.Science]: {
         affects: Object.values(Research),
         effectType: EffectType.Speed,
-        multiplicative: (level: number, effectiveLevel: number) => Math.pow(Math.floor(level), 0.75)
+        multiplicative: () => Math.pow(Math.floor(objects[Resource.Science].getEffectiveValue()), 0.75)
     },
 }
 
@@ -294,9 +295,9 @@ function selectResearch(research: Research) {
 function createEffect(sourceKey: Progression, receiverKeys: Progression[], effectData: {
     affects: Progression[],
     effectType: EffectType,
-    additive?: (value: number, effectiveValue: number) => number,
-    multiplcative?: (value: number, effectiveValue: number) => number,
-    exponential?: (value: number, effectiveValue: number) => number,
+    additive?: () => number,
+    multiplcative?: () => number,
+    exponential?: () => number,
 }, exclude = [] as Progression[]) {
 
     let effect = new Effect(sourceKey, receiverKeys, effectData)
@@ -536,7 +537,11 @@ function load() {
 }
 
 function resetGame() {
-    
+    for (let k in objects) {
+        let key = k as keyof typeof objects
+        objects[key].reset()
+    }
+    selectBuilding(Building.Crops)
 }
 
 createAllRows()

@@ -35,16 +35,16 @@ class Effect {
     receivers: Progression[]
     requirements: RequirementList
     effectType: EffectType
-    additive?: (value: number, effectiveValue: number) => number
-    multiplicative?: (value: number, effectiveValue: number) => number
-    exponential?: (value: number, effectiveValue: number) => number
+    additive?: () => number
+    multiplicative?: () => number
+    exponential?: () => number
 
     constructor(source: Progression, receivers: Progression[], baseData: {
         requirements?: RequirementList,
         effectType: EffectType,
-        additive?: (value: number, effectiveValue: number) => number,
-        multiplicative?: (value: number, effectiveValue: number) => number,
-        exponential?: (value: number, effectiveValue: number) => number
+        additive?: () => number,
+        multiplicative?: () => number,
+        exponential?: () => number
     }) {
         this.source = source
         this.receivers = receivers
@@ -67,16 +67,14 @@ class Effect {
         if (this.additive == undefined) {
             return 0
         }
-        let src = objects[this.source]
-        return this.additive(src.getValue(), src.getEffectiveValue())
+        return this.additive()
     }
 
     scalar() {
         if (this.multiplicative == undefined) {
             return 1
         }
-        let src = objects[this.source]
-        return this.multiplicative(src.getValue(), src.getEffectiveValue())
+        return this.multiplicative()
     }
 
     power() {
@@ -84,7 +82,7 @@ class Effect {
             return 1
         }
         let src = objects[this.source]
-        return this.exponential(src.getValue(), src.getEffectiveValue())
+        return this.exponential()
     }
 
     description() {
@@ -181,6 +179,7 @@ class GameEvent {
 }
 
 abstract class GameObject {
+    baseData: {[key: string] : any}
     type: Progression
     requirements: RequirementList
     effectMap: EffectMap
@@ -190,6 +189,7 @@ abstract class GameObject {
         type: Progression,
         requirements?: RequirementList,
     }) {
+        this.baseData = baseData
         this.type = baseData.type
         this.requirements = baseData.requirements ? baseData.requirements : new RequirementList()
         this.effectMap = new EffectMap()
@@ -219,7 +219,9 @@ abstract class GameObject {
 
     abstract update(): void
 
-    abstract load(copyObj: any): void
+    abstract load(copyObj: any): boolean
+
+    abstract reset(): void
 
     abstract getValue(): number
 
@@ -266,8 +268,16 @@ class ResourceObject extends GameObject {
         this.amount += applySpeed(this.getIncome())
     }
 
-    load(copyObj: any): void {
+    load(copyObj: any): boolean {
+        if (!(copyObj.amount)) {
+            return false
+        }
         this.amount = copyObj.amount
+        return true
+    }
+
+    reset() {
+        this.amount = this.baseData.amount ? this.baseData.amount : 0
     }
 
     updateDisplay() {
@@ -363,6 +373,8 @@ class LevelObject extends GameObject {
 
         if (this.isUnlocked()) {
             row!.style.display = ""
+        } else {
+            row!.style.display = "none"
         }
 
         row!.getElementsByClassName("level")[0].textContent = format(this.level)
@@ -383,11 +395,22 @@ class LevelObject extends GameObject {
         }
     }
 
-    load(copyObj: any) {
+    load(copyObj: any): boolean {
+        if (!(copyObj.level && copyObj.xp && copyObj.maxXp && copyObj.selected)) {
+            return false
+        }
         this.level = copyObj.level
         this.xp = copyObj.xp
         this.maxXp = copyObj.maxXp
         this.selected = copyObj.selected
+        return true
+    }
+    
+    reset() {
+        this.level = this.baseData.level ? this.baseData.level : 0
+        this.xp = this.baseData.xp ? this.baseData.xp : 0
+        this.maxXp = this.baseData.maxXp
+        this.selected = false
     }
 
 }
