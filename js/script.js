@@ -14,6 +14,11 @@ var Division;
     Division["Technology"] = "TECHNOLOGY";
     Division["Military"] = "MILITARY";
 })(Division || (Division = {}));
+var EffectType;
+(function (EffectType) {
+    EffectType["Power"] = "POWER";
+    EffectType["Speed"] = "SPEED";
+})(EffectType || (EffectType = {}));
 var Resource;
 (function (Resource) {
     Resource["Time"] = "TIME";
@@ -43,36 +48,31 @@ const baseData = {
     [Building.Crops]: {
         type: Building.Crops,
         maxXp: 100,
-        affects: { [Resource.Population]: (level) => 1 + (level * 0.1) },
-        scaling: (level) => Math.pow(1.01, level) + 0.1 * level,
+        scaling: (level) => Math.pow(1.01, level) + 0.2 * level,
     },
     [Building.Fields]: {
-        requirements: [new Requirement(Building.Crops, 5)],
+        requirements: new RequirementList([new Requirement(Building.Crops, 5)]),
         type: Building.Fields,
-        maxXp: 1000,
-        affects: { [Building.Crops]: (level) => 1 + (level * 0.2) },
-        scaling: (level) => Math.pow(1.02, level) + 0.2 * level,
+        maxXp: 2000,
+        scaling: (level) => Math.pow(1.02, level) + 0.35 * level,
     },
     [Building.Barns]: {
-        requirements: [new Requirement(Building.Fields, 10)],
+        requirements: new RequirementList([new Requirement(Building.Fields, 10)]),
         type: Building.Barns,
-        maxXp: 10000,
-        affects: { [Building.Fields]: (level) => 1 + (level * 0.5) },
+        maxXp: 50000,
         scaling: (level) => Math.pow(1.05, level) + 0.5 * level,
     },
     [Building.Learner]: {
-        requirements: [new Requirement(Resource.Population, 100)],
+        requirements: new RequirementList([new Requirement(Resource.Population, 100)]),
         type: Building.Learner,
         maxXp: 500,
-        affects: { [Resource.Science]: (level) => 1 + (level * 0.1) },
-        scaling: (level) => Math.pow(1.01, level) + 0.1 * level,
+        scaling: (level) => Math.pow(1.01, level) + 0.2 * level,
     },
     [Research.SeedDiversity]: {
-        requirements: [new Requirement(Resource.Science, 1)],
+        requirements: new RequirementList([new Requirement(Resource.Population, 100)]),
         type: Research.SeedDiversity,
         maxXp: 1000,
-        affects: { [Building.Crops]: (level) => 1 + (level * 0.1) },
-        scaling: (level) => Math.pow(1.01, level) + 0.1 * level,
+        scaling: (level) => Math.pow(1.01, level) + 0.35 * level,
     },
     [Resource.Time]: {
         type: Resource.Time,
@@ -82,25 +82,57 @@ const baseData = {
     [Resource.Population]: {
         type: Resource.Population,
         amount: 1,
-        baseIncome: 0.03,
-        xpAffects: affect(Object.values(Building), (s, r) => Math.pow(Math.floor(s), 0.75))
     },
     [Resource.Science]: {
         type: Resource.Science,
-        baseIncome: 0.01,
-        requirements: [new Requirement(Resource.Population, 100)],
-        xpAffects: affect(Object.values(Research), (s, r) => Math.pow(Math.floor(s), 0.75))
+        requirements: new RequirementList([new Requirement(Resource.Population, 100)]),
     },
     [Resource.Capital]: {
         type: Resource.Capital,
-        baseIncome: 0.001,
-        requirements: [new Requirement(Resource.Population, 1000)],
+        requirements: new RequirementList([new Requirement(Resource.Population, 1000)]),
         display: setCapitalDisplay
     },
     [Resource.Rebirths]: {
         type: Resource.Rebirths,
         amount: 0,
         baseIncome: 0
+    },
+};
+const effectData = {
+    [Building.Crops]: {
+        affects: [Resource.Population],
+        effectType: EffectType.Speed,
+        additive: (level, effectiveLevel) => 0.05 * effectiveLevel
+    },
+    [Building.Fields]: {
+        affects: [Building.Crops],
+        effectType: EffectType.Power,
+        multiplicative: (level, effectiveLevel) => 1 + (effectiveLevel * 0.2)
+    },
+    [Building.Barns]: {
+        affects: [Building.Fields],
+        effectType: EffectType.Power,
+        multiplicative: (level, effectiveLevel) => 1 + (effectiveLevel * 0.5)
+    },
+    [Building.Learner]: {
+        affects: [Resource.Science],
+        effectType: EffectType.Speed,
+        additive: (level, effectiveLevel) => 0.01 * effectiveLevel
+    },
+    [Research.SeedDiversity]: {
+        affects: [Building.Crops],
+        effectType: EffectType.Power,
+        multiplicative: (level, effectiveLevel) => 1 + (level * 0.1)
+    },
+    [Resource.Population]: {
+        affects: Object.values(Building),
+        effectType: EffectType.Speed,
+        multiplicative: (level, effectiveLevel) => Math.pow(Math.floor(level), 0.75)
+    },
+    [Resource.Science]: {
+        affects: Object.values(Research),
+        effectType: EffectType.Speed,
+        multiplicative: (level, effectiveLevel) => Math.pow(Math.floor(level), 0.75)
     },
 };
 const metadata = {
@@ -195,7 +227,7 @@ const metadata = {
         [Info.Children]: null,
     },
 };
-var objects = {
+const objects = {
     [Building.Crops]: new LevelObject(baseData[Building.Crops]),
     [Building.Fields]: new LevelObject(baseData[Building.Fields]),
     [Building.Barns]: new LevelObject(baseData[Building.Barns]),
@@ -238,16 +270,23 @@ function selectResearch(research) {
     }
     objects[research].select();
 }
-function affect(keys, f, exclude = []) {
-    let affects = {};
-    for (let k of keys) {
+function createEffect(sourceKey, receiverKeys, effectData, exclude = []) {
+    let effect = new Effect(sourceKey, receiverKeys, effectData);
+    let source = objects[sourceKey];
+    for (let k of receiverKeys) {
         let key = k;
         if (key in exclude) {
             continue;
         }
-        affects[key] = f;
+        source.sendAffect(key, effect);
     }
-    return affects;
+}
+function createAllEffects() {
+    for (let k in effectData) {
+        let key = k;
+        let data = effectData[key];
+        createEffect(key, data.affects, data);
+    }
 }
 function categoryUnlocked(c) {
     for (let t of metadata[c][Info.Children]) {
@@ -444,7 +483,10 @@ function load() {
         objects[key].load(loadedObjects[keyString]);
     }
 }
+function resetGame() {
+}
 createAllRows();
+createAllEffects();
 selectBuilding(Building.Crops);
 setTab(document.getElementById("economyButton"), "economy");
 load();
