@@ -1,65 +1,50 @@
 class Requirement {
-    type: Progression
-    threshold: number
+    func: () => boolean
 
-    constructor(type: Progression, threshold: number) {
-        this.type = type
-        this.threshold = threshold
+    constructor(func = () => true) {
+        this.func = func
     }
 
     isSatisfied() {
-        return objects[this.type].getValue() >= this.threshold
+        return this.func()
     }
 
-}
-
-class RequirementList {
-    requirements: Requirement[]
-
-    constructor(requirements: Requirement[] = []) {
-        this.requirements = requirements
-    }
-
-    isUnlocked() {
-        for (let r of this.requirements) {
-            if (!r.isSatisfied()) {
-                return false
-            }
-        }
-        return true
-    }
 }
 
 class Effect {
-    source: Progression
-    receivers: Progression[]
-    requirements: RequirementList
+    source: Feature
+    receivers: Feature[]
+    requirements: Requirement
     effectType: EffectType
     additive?: () => number
     multiplicative?: () => number
     exponential?: () => number
 
-    constructor(source: Progression, receivers: Progression[], baseData: {
-        requirements?: RequirementList,
+    constructor(source: Feature, receivers: Feature[], baseData: {
+        requirements?: Requirement | (() => boolean),
         effectType: EffectType,
         additive?: () => number,
         multiplicative?: () => number,
         exponential?: () => number
     }) {
+        if (baseData.requirements instanceof Requirement) {
+            this.requirements = baseData.requirements
+        } else {
+            this.requirements = baseData.requirements ? new Requirement(baseData.requirements) : new Requirement()
+        }
         this.source = source
         this.receivers = receivers
-        this.requirements = baseData.requirements ? baseData.requirements : new RequirementList()
         this.effectType = baseData.effectType
         this.additive = baseData.additive
         this.multiplicative = baseData.multiplicative
         this.exponential = baseData.exponential
     }
 
-    setSource(key: Progression) {
+    setSource(key: Feature) {
         this.source = key
     }
 
-    setReceivers(keys: Progression[]) {
+    setReceivers(keys: Feature[]) {
         this.receivers = keys
     }
 
@@ -102,42 +87,42 @@ class Effect {
 }
 
 class AffectMap {
-    affects: {[key in Progression]: Effect}
+    affects: {[key in Feature]: Effect}
 
-    constructor(affects = {} as {[key in Progression]: Effect}) {
+    constructor(affects = {} as {[key in Feature]: Effect}) {
         this.affects = affects
     }
 
-    setAffect(key: Progression, effect: Effect) {
+    setAffect(key: Feature, effect: Effect) {
         this.affects[key] = effect
     }
 
-    getAffect(key: Progression) {
+    getAffect(key: Feature) {
         return this.affects[key]
     }
 
 }
 
 class EffectMap {
-    effects: {[key in Progression]: Effect}
+    effects: {[key in Feature]: Effect}
 
-    constructor(effects = {} as {[key in Progression]: Effect}) {
+    constructor(effects = {} as {[key in Feature]: Effect}) {
         this.effects = effects
     }
 
-    setEffect(key: Progression, effect: Effect) {
+    setEffect(key: Feature, effect: Effect) {
         this.effects[key] = effect
     }
 
-    getEffect(key: Progression) {
+    getEffect(key: Feature) {
         return this.effects[key]
     }
 
     applyAdditive(value: number, type: EffectType) {
         for (let e in this.effects) {
-            let effectKey = e as Progression
+            let effectKey = e as Feature
             let effect = this.effects[effectKey]
-            if (effect.requirements.isUnlocked() && effect.effectType == type) {
+            if (effect.requirements.isSatisfied() && effect.effectType == type) {
                 value += effect.constant()
             }
         }
@@ -146,9 +131,9 @@ class EffectMap {
 
     applyMultiplicative(value: number, type: EffectType) {
         for (let e in this.effects) {
-            let effectKey = e as Progression
+            let effectKey = e as Feature
             let effect = this.effects[effectKey]
-            if (effect.requirements.isUnlocked() && effect.effectType == type) {
+            if (effect.requirements.isSatisfied() && effect.effectType == type) {
                 value *= effect.scalar()
             }
         }
@@ -157,9 +142,9 @@ class EffectMap {
 
     applyExponential(value: number, type: EffectType) {
         for (let e in this.effects) {
-            let effectKey = e as Progression
+            let effectKey = e as Feature
             let effect = this.effects[effectKey]
-            if (effect.requirements.isUnlocked() && effect.effectType == type) {
+            if (effect.requirements.isSatisfied() && effect.effectType == type) {
                 value = Math.pow(value, effect.power())
             }
         }
@@ -174,24 +159,57 @@ class EffectMap {
     }
 }
 
+class ActionList {
+    actions: [{func: Function, args: []}]
+
+    constructor(actions: [{func: Function, args: []}]) {
+        this.actions = actions
+    }
+
+    executeActions() {
+        for (let idx in this.actions) {
+            let action = this.actions[idx]
+            action.func(...action.args)
+        }
+    }
+}
+
 class GameEvent {
+    actionList: ActionList
+    requirements: Requirement
+    executed = false
+
+    constructor(actionList: ActionList, requirements: Requirement) {
+        this.actionList = actionList
+        this.requirements = requirements ? requirements : new Requirement()
+    }
+
+    execute() {
+        if (!this.executed && this.requirements.isSatisfied()) {
+            this.actionList.executeActions()
+            this.executed = true
+        }
+    }
 
 }
 
 abstract class GameObject {
     baseData: {[key: string] : any}
-    type: Progression
-    requirements: RequirementList
+    type: Feature
+    requirements: Requirement
     effectMap: EffectMap
     affectMap: AffectMap
 
-    constructor(baseData: {
-        type: Progression,
-        requirements?: RequirementList,
+    constructor(type: Feature, baseData: {
+        requirements?: Requirement | (() => boolean),
     }) {
+        this.type = type
+        if (baseData.requirements instanceof Function) {
+            this.requirements = new Requirement(baseData.requirements)
+        } else {
+            this.requirements = baseData.requirements ? baseData.requirements : new Requirement()
+        }
         this.baseData = baseData
-        this.type = baseData.type
-        this.requirements = baseData.requirements ? baseData.requirements : new RequirementList()
         this.effectMap = new EffectMap()
         this.affectMap = new AffectMap()
     }
@@ -204,7 +222,7 @@ abstract class GameObject {
         return this.type.toLowerCase()
     }
 
-    sendAffect(receiverKey: Progression, effect: Effect) {
+    sendAffect(receiverKey: Feature, effect: Effect) {
         this.affectMap.setAffect(receiverKey, effect)
         objects[receiverKey].effectMap.setEffect(this.type, effect)
     }
@@ -214,18 +232,19 @@ abstract class GameObject {
     }
 
     isUnlocked() {
-        return this.requirements.isUnlocked()
+        return this.requirements.isSatisfied()
     }
 
     abstract update(): void
 
-    abstract load(copyObj: any): boolean
-
-    abstract reset(): void
-
     abstract getValue(): number
 
-    abstract getEffectiveValue(): number
+    abstract load(copyObj: any): boolean
+
+    abstract hardReset(): void
+
+    abstract rebirth() : void
+
 }
 
 class ResourceObject extends GameObject {
@@ -233,15 +252,14 @@ class ResourceObject extends GameObject {
     amount: number
     display?: (amount: number) => void
 
-    constructor(baseData: {
-        type: Progression,
-        requirements?: RequirementList,
+    constructor(type: Feature, baseData: {
+        requirements?: Requirement | (() => boolean),
         affects?: EffectMap,
         baseIncome?: number,
         amount?: number, 
         display?: (amount: number) => void
     }) {
-        super(baseData)
+        super(type, baseData)
         this.baseIncome = baseData.baseIncome ? baseData.baseIncome : 0
         this.amount = baseData.amount ? baseData.amount : 0
         this.display = baseData.display
@@ -254,6 +272,22 @@ class ResourceObject extends GameObject {
 
     getValue(): number {
         return this.amount
+    }
+
+    setValue(val: number): void {
+        this.amount = val
+    }
+
+    deductValue(val: number): void {
+        this.amount -= val
+    }
+
+    incrementValue(val: number): void {
+        this.amount += val
+    }
+
+    canAfford(val: number): boolean {
+        return this.getValue() >= val
     }
 
     getEffectiveValue(): number {
@@ -269,14 +303,14 @@ class ResourceObject extends GameObject {
     }
 
     load(copyObj: any): boolean {
-        if (!(copyObj.amount)) {
+        if (copyObj.amount == undefined) {
             return false
         }
         this.amount = copyObj.amount
         return true
     }
 
-    reset() {
+    hardReset() {
         this.amount = this.baseData.amount ? this.baseData.amount : 0
     }
 
@@ -284,9 +318,9 @@ class ResourceObject extends GameObject {
         var HTML_display = document.getElementById(`${this.getID()}Display`)
         if (HTML_display) {
             if (this.isUnlocked()) {
-                HTML_display.style.display = ""
+                HTML_display.classList.remove("hidden")
             } else {
-                HTML_display.style.display = "none"
+                HTML_display.classList.add("hidden")
             }
         }
         if (this.display) {
@@ -299,37 +333,47 @@ class ResourceObject extends GameObject {
         }
         HTML.textContent = format(this.amount)
     }
+
+    rebirth(): void {
+        this.hardReset()
+    }
 }
+
 
 class LevelObject extends GameObject {
     baseMaxXp: number
     scaling: (l: number) => number
+    cost?: [Resource, number]
 
     level: number
     xp: number
     maxXp: number
+    pastLevels: number
+
     selected = false
-    constructor(baseData: {
-        type: Progression,
-        level?: number
-        xp?: number
-        requirements?: RequirementList,
+    constructor(type: Feature, baseData: {
+        level?: number,
+        pastLevels?: number,
+        xp?: number,
+        requirements?: Requirement | (() => boolean),
         affects?: EffectMap,
         maxXp: number,
-        scaling: (l: number) => number
+        cost?: [Resource, number]
+        scaling?: (l: number) => number
     }) {
-        super(baseData)
+        super(type, baseData)
         this.level = baseData.level ? baseData.level : 0
         this.xp = baseData.xp ? baseData.xp : 0
         this.baseMaxXp = baseData.maxXp
         this.maxXp = baseData.maxXp
-        this.scaling = baseData.scaling
+        this.cost = baseData.cost
+        this.pastLevels = baseData.pastLevels ? baseData.pastLevels : 0
+        this.scaling = baseData.scaling ? baseData.scaling : () => 1
     }
 
     update() {
         if (this.isUnlocked()) {
             this.updateXp()
-            this.updateLevel()
         }
         this.updateRow()
     }
@@ -340,6 +384,10 @@ class LevelObject extends GameObject {
 
     getValue(): number {
         return this.level
+    }
+
+    getPastLevels(): number {
+        return this.pastLevels
     }
 
     getEffectiveValue(): number {
@@ -356,8 +404,22 @@ class LevelObject extends GameObject {
 
     updateXp() {
         if (this.isSelected()) {
-            this.xp += applySpeed(this.getXpGain())
+            let adjustedXp = applySpeed(this.getXpGain())
+            if (this.cost) {
+                let resource = objects[this.cost[0]]
+                let xpCost = adjustedXp / this.maxXp * this.cost[1]
+                if (resource.canAfford(xpCost)) {
+                    this.xp += adjustedXp
+                    resource.deductValue(xpCost)
+                } else {
+                    this.xp += adjustedXp * resource.getValue() / xpCost
+                    resource.setValue(0)
+                }
+            } else {
+                this.xp += adjustedXp
+            }
         }
+        this.updateLevel()
     }
 
     updateLevel() {
@@ -372,16 +434,16 @@ class LevelObject extends GameObject {
         var row = document.getElementById(this.getID())
 
         if (this.isUnlocked()) {
-            row!.style.display = ""
+            row!.classList.remove("hidden")
         } else {
-            row!.style.display = "none"
+            row!.classList.add("hidden")
         }
 
         row!.getElementsByClassName("level")[0].textContent = format(this.level)
         row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXpGain())
 
         for (let r in this.affectMap.affects) {
-            let receiverKey = r as keyof typeof objects
+            let receiverKey = r as Feature
             row!.getElementsByClassName("effect")[0].textContent = `${this.affectMap.getAffect(receiverKey).description()}`
         }
 
@@ -396,21 +458,238 @@ class LevelObject extends GameObject {
     }
 
     load(copyObj: any): boolean {
-        if (!(copyObj.level && copyObj.xp && copyObj.maxXp && copyObj.selected)) {
-            return false
-        }
-        this.level = copyObj.level
-        this.xp = copyObj.xp
-        this.maxXp = copyObj.maxXp
-        this.selected = copyObj.selected
+        this.level = copyObj.level ? copyObj.level : 0
+        this.xp = copyObj.xp ? copyObj.xp : 0
+        this.maxXp = copyObj.maxXp ? copyObj.maxXp : this.baseMaxXp
+        this.selected = copyObj.selected ? copyObj.selected : false
+        this.pastLevels = copyObj.pastLevels ? copyObj.pastLevels : 0
         return true
     }
     
-    reset() {
+    hardReset() {
         this.level = this.baseData.level ? this.baseData.level : 0
         this.xp = this.baseData.xp ? this.baseData.xp : 0
         this.maxXp = this.baseData.maxXp
         this.selected = false
+        this.pastLevels = 0
+    }
+
+    rebirth() {
+        this.pastLevels += this.level
+        this.level = 0
+        this.xp = 0
+        this.maxXp = this.baseMaxXp
+    }
+
+}
+
+class BinaryXpObject extends GameObject {
+    xp: number
+    requiredXp: number
+    selected = false
+    pastCompletions: number
+    constructor(type: Feature, baseData: {
+        unlocked?: boolean
+        pastUnlocks?: number
+        xp?: number
+        requirements?: Requirement | (() => boolean),
+        affects?: EffectMap,
+        requiredXp: number,
+    }) {
+        super(type, baseData)
+        this.pastCompletions = baseData.pastUnlocks ? baseData.pastUnlocks : 0
+        this.xp = baseData.xp ? baseData.xp : 0
+        this.requiredXp = baseData.requiredXp
+    }
+
+    update() {
+        if (this.isUnlocked()) {
+            this.updateXp()
+        }
+        this.updateRow()
+    }
+
+    getXpGain(): number {
+        return this.applyEffects(10, EffectType.Speed)
+    }
+
+    getValue(): number {
+        return this.isCompleted() ? 1 : 0
+    }
+
+    getPastCompletions(): number {
+        return this.pastCompletions
+    }
+
+    select() {
+        this.selected = true
+    }
+
+    isSelected(): boolean {
+        return this.selected
+    }
+
+    updateXp() {
+        if (this.isSelected() && !this.isCompleted()) {
+            this.xp += applySpeed(this.getXpGain())
+            if (this.isCompleted()) {
+                this.xp = this.requiredXp
+            }
+        }
+    }
+
+    isCompleted() {
+        return this.xp >= this.requiredXp
+    }
+
+    load(copyObj: any): boolean {
+        if (copyObj.xp == undefined || copyObj.selected == undefined) {
+            return false
+        }
+        this.xp = copyObj.xp
+        this.selected = copyObj.selected
+        return true
+    }
+    
+    hardReset() {
+        this.xp = this.baseData.xp ? this.baseData.xp : 0
+        this.selected = false
+    }
+
+    rebirth() {
+        this.pastCompletions += this.isCompleted() ? 1 : 0
+        this.xp = 0
+    }
+
+    updateRow() {
+        var row = document.getElementById(this.getID())
+
+        if (this.isUnlocked()) {
+            row!.classList.remove("hidden")
+        } else {
+            row!.classList.add("hidden")
+        }
+
+        if (this.isCompleted()) {
+            row!.getElementsByClassName("level")[0].textContent = "Completed"
+        } else if (this.isSelected()) {
+            row!.getElementsByClassName("level")[0].textContent = "In Progress"
+        } else {
+            row!.getElementsByClassName("level")[0].textContent = "Postphoned"
+        }
+
+        row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXpGain())
+
+        for (let r in this.affectMap.affects) {
+            let receiverKey = r as Feature
+            row!.getElementsByClassName("effect")[0].textContent = `${this.affectMap.getAffect(receiverKey).description()}`
+        }
+
+        row!.getElementsByClassName("xpLeft")[0].textContent = format(this.requiredXp - this.xp)
+        var bar = (row!.getElementsByClassName("progressFill")[0] as HTMLDivElement)
+        bar.style.width = `${100 * this.xp / this.requiredXp}%`
+        if (this.isSelected()) {
+            bar.classList.add('selected')
+        } else {
+            bar.classList.remove('selected')
+        }
+        if (this.isCompleted()) {
+            bar.classList.add('completed')
+        } else {
+            bar.classList.remove('completed')
+        }
+    }
+
+}
+
+class BinaryObject extends GameObject {
+    unlocked = false
+    selected = false
+    pastCompletions: number
+    constructor(type: Feature, baseData: {
+        unlocked?: boolean
+        pastUnlocks?: number
+        requirements?: Requirement | (() => boolean),
+        affects?: EffectMap,
+    }) {
+        super(type, baseData)
+        this.pastCompletions = baseData.pastUnlocks ? baseData.pastUnlocks : 0
+        this.unlocked = baseData.unlocked ? baseData.unlocked : false
+    }
+
+    update() {
+        this.updateRow()
+    }
+
+    getXpGain(): number {
+        return this.applyEffects(10, EffectType.Speed)
+    }
+
+    getValue(): number {
+        return this.isUnlocked() ? 1 : 0
+    }
+
+    getPastCompletions(): number {
+        return this.pastCompletions
+    }
+
+    select() {
+        this.selected = true
+    }
+
+    isSelected(): boolean {
+        return this.selected
+    }
+
+    isUnlocked(): boolean {
+        return this.unlocked
+    }
+
+    load(copyObj: any): boolean {
+        if (copyObj.selected == undefined) {
+            return false
+        }
+        this.selected = copyObj.selected
+        return true
+    }
+    
+    hardReset() {
+        this.selected = false
+    }
+
+    rebirth() {
+
+    }
+
+    updateRow() {
+        var row = document.getElementById(this.getID())
+
+        if (this.isUnlocked()) {
+            row!.classList.remove("hidden")
+        } else {
+            row!.classList.add("hidden")
+        }
+
+        if (this.isUnlocked()) {
+            row!.getElementsByClassName("level")[0].textContent = "Unlocked"
+        } else {
+            row!.getElementsByClassName("level")[0].textContent = "Offered"
+        }
+
+        row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXpGain())
+
+        for (let r in this.affectMap.affects) {
+            let receiverKey = r as Feature
+            row!.getElementsByClassName("effect")[0].textContent = `${this.affectMap.getAffect(receiverKey).description()}`
+        }
+
+        var bar = (row!.getElementsByClassName("progressFill")[0] as HTMLDivElement)
+        bar.style.width = `${this.isUnlocked() ? 100 : 0}%`
+        if (this.isUnlocked()) {
+            bar.classList.add('completed')
+        } else {
+            bar.classList.remove('completed')
+        }
     }
 
 }

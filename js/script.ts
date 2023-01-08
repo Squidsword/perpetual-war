@@ -1,133 +1,141 @@
-enum Info {
-    Division = "DIVISION",
-    Resource = "RESOURCE",
-    Children = "CHILDREN",
-    Category = "CATEGORY",
-    Object = "OBJECT",
-    BaseData = "BASEDATA"
-}
-
-enum Division {
-    Economy = "ECONOMY",
-    Technology = "TECHNOLOGY",
-    Military = "MILITARY",
-}
-
-enum EffectType {
-    Power = "POWER",
-    Speed = "SPEED"
-}
-
-enum Resource {
-    Time = "TIME",
-    Population = "POPULATION",
-    Capital = "CAPITAL",
-    Science = "SCIENCE",
-    Rebirths = "REBIRTHS",
-}
-
-enum Building {
-    Crops = "CROPS",
-    Fields = "FIELDS",
-    Barns = "BARNS",
-
-    Learner = "LEARNER",
-}
-
-enum Research {
-    SeedDiversity = "SEED_DIVERSITY"
-}
-
-enum Category {
-    Growth = "GROWTH",
-    Discovery = "DISCOVERY",
-
-    Agriculture = "AGRIGULTURE"
-}
-
-type Progression = Resource | Research | Building
-
 const baseData = {
     [Building.Crops]: {
-        type: Building.Crops,
-        maxXp: 100,
-        scaling: (level: number) => Math.pow(1.01, level) + 0.2 * level,
+        maxXp: 50,
+        scaling: (level: number) => Math.pow(1.02, level) + 1 * level,
     },
     [Building.Fields]: {
-        requirements: new RequirementList([new Requirement(Building.Crops, 5)]),
-        type: Building.Fields,
+        requirements: (): boolean => objects[Building.Crops].getValue() >= 5,
         maxXp: 2000,
-        scaling: (level: number) => Math.pow(1.01, level) + 0.2 * level,
+        scaling: (level: number) => Math.pow(1.04, level) + 0.2 * level,
     }, 
     [Building.Barns]: {
-        requirements: new RequirementList([new Requirement(Building.Fields, 10)]),
-        type: Building.Barns,
+        requirements: (): boolean => objects[Building.Fields].getValue() >= 10,
         maxXp: 20000,
-        scaling: (level: number) => Math.pow(1.01, level) + 0.2 * level,
+        scaling: (level: number) => Math.pow(1.06, level) + 0.2 * level,
     },
+    [Building.Silos]: {
+        requirements: (): boolean => objects[Building.Barns].getValue() >= 10,
+        maxXp: 200000,
+        scaling: (level: number) => Math.pow(1.08, level) + 0.2 * level,
+    },
+
     [Building.Learner]: {
-        requirements: new RequirementList([new Requirement(Resource.Population, 100)]),
-        type: Building.Learner,
-        maxXp: 500,
-        scaling: (level: number) => Math.pow(1.01, level) + 0.2 * level,
+        requirements: (): boolean => objects[Resource.Population].getValue() >= 100,
+        maxXp: 2000,
+        scaling: (level: number) => Math.pow(1.02, level) + 0.2 * level,
     },
+
+    [Building.Digger]: {
+        requirements: (): boolean => objects[Resource.Population].getValue() >= 10000,
+        maxXp: 100000,
+        scaling: (level: number) => Math.pow(1.02, level) + 0.2 * level,
+    },
+
     [Research.SeedDiversity]: {
-        requirements: new RequirementList([new Requirement(Resource.Population, 100)]),
-        type: Research.SeedDiversity,
-        maxXp: 1000,
-        scaling: (level: number) => Math.pow(1.01, level) + 0.35 * level,
+        requirements: (): boolean => objects[Building.Fields].getValue() >= 5,
+        requiredXp: 5000,
+    },
+    [Research.Fences]: {
+        requirements: (): boolean => objects[Building.Fields].getValue() >= 10,
+        requiredXp: 50000,
+    },
+    [Research.Sheds]: {
+        requirements: (): boolean => objects[Building.Barns].getValue() >= 10,
+        requiredXp: 2000000,
     },
     [Resource.Time]: {
-        type: Resource.Time,
-        baseIncome: 365/900,
+        baseIncome: 365/600,
         display: setTimeDisplay
     },
     [Resource.Population]: {
-        type: Resource.Population,
         amount: 1,
     },
     [Resource.Science]: {
-        type: Resource.Science,
-        requirements: new RequirementList([new Requirement(Resource.Population, 100)]),
+        requirements: (): boolean => objects[Resource.Population].getValue() >= 100,
     },
     [Resource.Capital]: {
-        type: Resource.Capital,
-        requirements: new RequirementList([new Requirement(Resource.Population, 1000)]),
+        requirements: (): boolean => objects[Resource.Population].getValue() >= 10000,
         display: setCapitalDisplay
     },
     [Resource.Rebirths]: {
-        type: Resource.Rebirths,
-        amount: 0,
-        baseIncome: 0
+
     },
+    [Unit.Clubsman]: {
+        requirements: (): boolean => objects[Resource.Population].getValue() >= 10000,
+        maxXp: 300,
+        cost: [Resource.Capital, 200] as [Resource, number]
+    }
+}
+
+const objects = {
+    [Building.Crops]: new LevelObject(Building.Crops, baseData[Building.Crops]),
+    [Building.Fields]: new LevelObject(Building.Fields, baseData[Building.Fields]),
+    [Building.Barns]: new LevelObject(Building.Barns, baseData[Building.Barns]),
+    [Building.Silos]: new LevelObject(Building.Silos, baseData[Building.Silos]),
+    [Building.Learner]: new LevelObject(Building.Learner, baseData[Building.Learner]),
+    [Building.Digger]: new LevelObject(Building.Digger, baseData[Building.Digger]),
+
+    [Resource.Time]: new ResourceObject(Resource.Time, baseData[Resource.Time]),
+    [Resource.Population]: new ResourceObject(Resource.Population, baseData[Resource.Population]),
+    [Resource.Science]: new ResourceObject(Resource.Science, baseData[Resource.Science]),
+    [Resource.Capital]: new ResourceObject(Resource.Capital, baseData[Resource.Capital]),
+    [Resource.Rebirths]: new ResourceObject(Resource.Rebirths, baseData[Resource.Rebirths]),
+
+    [Research.SeedDiversity]: new BinaryXpObject(Research.SeedDiversity, baseData[Research.SeedDiversity]),
+    [Research.Fences]: new BinaryXpObject(Research.Fences, baseData[Research.Fences]),
+    [Research.Sheds]: new BinaryXpObject(Research.Sheds, baseData[Research.Sheds]),
+
+    [Unit.Clubsman]: new LevelObject(Unit.Clubsman, baseData[Unit.Clubsman])
 }
 
 const effectData = {
     [Building.Crops]: {
         affects: [Resource.Population],
         effectType: EffectType.Speed,
-        additive: () => 0.02 * objects[Building.Crops].getEffectiveValue()
+        additive: () => 0.03 * objects[Building.Crops].getEffectiveValue()
     },
     [Building.Fields]: {
         affects: [Resource.Population],
-        effectType: EffectType.Power,
-        additive: () => 0.1 * objects[Building.Fields].getEffectiveValue()
+        effectType: EffectType.Speed,
+        additive: () => 0.3 * objects[Building.Fields].getEffectiveValue()
     },
     [Building.Barns]: {
         affects: [Resource.Population],
-        effectType: EffectType.Power,
-        additive: () => 1 * objects[Building.Barns].getEffectiveValue()
+        effectType: EffectType.Speed,
+        additive: () => 3 * objects[Building.Barns].getEffectiveValue()
+    },
+    [Building.Silos]: {
+        affects: [Resource.Population],
+        effectType: EffectType.Speed,
+        additive: () => 30 * objects[Building.Silos].getEffectiveValue()
     },
     [Building.Learner]: {
         affects: [Resource.Science],
         effectType: EffectType.Speed,
-        additive: () => 0.01 * objects[Building.Learner].getEffectiveValue()
+        additive: () => 0.03 * objects[Building.Learner].getEffectiveValue()
+    },
+    [Building.Digger]: {
+        affects: [Resource.Capital],
+        effectType: EffectType.Speed,
+        additive: () => 1 * objects[Building.Digger].getEffectiveValue()
     },
     [Research.SeedDiversity]: {
         affects: [Building.Crops],
         effectType: EffectType.Power,
-        requirements: new RequirementList([new Requirement(Research.SeedDiversity, 1)]),
+        requirements: () => objects[Research.SeedDiversity].isCompleted(),
         multiplicative: () => 2 + objects[Building.Fields].getEffectiveValue() * 0.1
+    },
+    [Research.Fences]: {
+        affects: [Building.Fields],
+        effectType: EffectType.Power,
+        requirements: () => objects[Research.Fences].isCompleted(),
+        multiplicative: () => 2 + objects[Building.Barns].getEffectiveValue() * 0.1
+    },
+    [Research.Sheds]: {
+        affects: [Building.Fields],
+        effectType: EffectType.Power,
+        requirements: () => objects[Research.Fences].isCompleted(),
+        multiplicative: () => 2 + objects[Building.Barns].getEffectiveValue() * 0.1
     },
     [Resource.Population]: {
         affects: Object.values(Building),
@@ -141,119 +149,210 @@ const effectData = {
     },
 }
 
-
 const metadata = {
     [Division.Economy]: {
-        [Info.Category]: [Category.Growth],
-        "button": document.getElementById("economyButton"),
-        "table": document.getElementById("economyTable")
+
     },
 
         [Category.Growth]: {
             [Info.Division]: Division.Economy,
-            [Info.Children]: [Building.Crops, Building.Fields, Building.Barns],
             "headerColor": "rgb(38, 136, 38)",
             "headerData": {
-                "categoryName": "Growth",
-                "levelName": "Expansions",
-                "effect": "Effect"
+                "category": "Growth",
+                "level": "Expansions",
+                "effect": "Effect",
+                "xpGain": "Pace",
+                "xpLeft": "Remaining"
             },
         },
 
             [Building.Crops]: {
-                [Info.Division]: Division.Economy,
                 [Info.Category]: Category.Growth,
             },
             [Building.Fields]: {
-                [Info.Division]: Division.Economy,
                 [Info.Category]: Category.Growth,
             },
             [Building.Barns]: {
-                [Info.Division]: Division.Economy,
+                [Info.Category]: Category.Growth,
+            },
+            [Building.Silos]: {
                 [Info.Category]: Category.Growth,
             },
 
         [Category.Discovery]: {
             [Info.Division]: Division.Economy,
-            [Info.Children]: [Building.Learner],
             "headerColor": "#0892D0",
             "headerData": {
-                "categoryName": "Discovery",
-                "levelName": "Movements",
-                "effect": "Effect"
+                "category": "Discovery",
+                "level": "Movements",
+                "effect": "Effect",
+                "xpGain": "Pace",
+                "xpLeft": "Remaining",
             },
         },
 
             [Building.Learner]: {
-                [Info.Division]: Division.Economy,
                 [Info.Category]: Category.Discovery,
+            },
+            
+        [Category.Power]: {
+            [Info.Division]: Division.Economy,
+            "headerColor": "rgb(150,50,50)",
+            "headerData": {
+                "category": "Power",
+                "level": "Depth",
+                "effect": "Effect",
+                "xpGain": "Pace",
+                "xpLeft": "Remaining",
+            },
+        },
+
+            [Building.Digger]: {
+                [Info.Category]: Category.Power,
             },
 
     [Division.Technology]: {
-        [Info.Category]: [Category.Agriculture],
-        "button": document.getElementById("technologyButton"),
-        "table": document.getElementById("technologyTable")
+
     },
         [Category.Agriculture]: {
             [Info.Division]: Division.Technology,
-            [Info.Children]: [Research.SeedDiversity],
             "headerColor": "rgb(38, 136, 38)",
             "headerData": {
-                "categoryName": "Agriculture",
-                "levelName": "Advancements",
-                "effect": "Effect"
+                "category": "Agriculture",
+                "level": "Status",
+                "effect": "Effect",
+                "xpGain": "Pace",
+                "xpLeft": "Remaining",
             },
         },
             [Research.SeedDiversity]: {
-                [Info.Division]: Division.Technology,
                 [Info.Category]: Category.Agriculture,
             },
+            [Research.Fences]: {
+                [Info.Category]: Category.Agriculture,
+            },
+            [Research.Sheds]: {
+                [Info.Category]: Category.Agriculture,
+            },
+
     [Division.Military]: {
-        [Info.Category]: [],
-        "button": document.getElementById("militaryButton"),
-        "table": document.getElementById("militaryTable")
+
     },
 
+        [Category.Infantry]: {
+            [Info.Division]: Division.Military,
+            "headerColor": "rgb(138, 68, 68)",
+            "headerData": {
+                "category": "Infantry",
+                "level": "Troops",
+                "effect": "Effect",
+                "xpGain": "Pace",
+                "xpLeft": "Remaining",
+            },
+        },
+
+            [Unit.Clubsman]: {
+                [Info.Category]: Category.Infantry
+            },
+
+        [Category.Ranged]: {
+            [Info.Division]: Division.Military,
+            "headerColor": "rgb(38, 136, 38)",
+            "headerData": {
+                "category": "Agriculture",
+                "level": "Status",
+                "effect": "Effect",
+                "xpGain": "Pace",
+                "xpLeft": "Remaining",
+            },
+        },
+
+        [Category.Cavalry]: {
+            [Info.Division]: Division.Military,
+            "headerColor": "rgb(38, 136, 38)",
+            "headerData": {
+                "category": "Agriculture",
+                "level": "Status",
+                "effect": "Effect",
+                "xpGain": "Pace",
+                "xpLeft": "Remaining",
+            },
+        },
+
     [Resource.Time]: {
-        [Info.Division]: null,
-        [Info.Category]: null,
-        [Info.Children]: null,
+
     },
     [Resource.Population]: {
-        [Info.Division]: null,
-        [Info.Category]: null,
-        [Info.Children]: null,
+
     },
     [Resource.Science]: {
-        [Info.Division]: null,
-        [Info.Category]: null,
-        [Info.Children]: null,
+
     },
     [Resource.Capital]: {
-        [Info.Division]: null,
-        [Info.Category]: null,
-        [Info.Children]: null,
+
     },
     [Resource.Rebirths]: {
-        [Info.Division]: null,
-        [Info.Category]: null,
-        [Info.Children]: null,
+
+    },
+    [Augments.Intuition]: {
+
     },
 }
 
-const objects = {
-    [Building.Crops]: new LevelObject(baseData[Building.Crops]),
-    [Building.Fields]: new LevelObject(baseData[Building.Fields]),
-    [Building.Barns]: new LevelObject(baseData[Building.Barns]),
-    [Building.Learner]: new LevelObject(baseData[Building.Learner]),
+function getCategories(division: Division) {
+    let children = [] as Category[]
+    for (let k in metadata) {
+        let objectKey = k as keyof typeof metadata
+        let objectMeta = metadata[objectKey]
+        if (Info.Division in objectMeta) {
+            if (objectMeta[Info.Division] == division) {
+                children.push(objectKey as Category)
+            }
+        }
+    }
+    return children
+}
 
-    [Resource.Time]: new ResourceObject(baseData[Resource.Time]),
-    [Resource.Population]: new ResourceObject(baseData[Resource.Population]),
-    [Resource.Science]: new ResourceObject(baseData[Resource.Science]),
-    [Resource.Capital]: new ResourceObject(baseData[Resource.Capital]),
-    [Resource.Rebirths]: new ResourceObject(baseData[Resource.Rebirths]),
+function getFeatures(parent: Category | Division) {
+    let children = [] as HierarchicalFeature[]
+    for (let k in metadata) {
+        let objectKey = k as keyof typeof metadata
+        let objectMeta = metadata[objectKey]
+        if (Info.Category in objectMeta) {
+            if (Object.values(Category).includes(parent as Category)) {
+                if (objectMeta[Info.Category] == parent) {
+                    children.push(objectKey as HierarchicalFeature)
+                }
+            } else {
+                if (metadata[objectMeta[Info.Category]][Info.Division] == parent) {
+                    children.push(objectKey as HierarchicalFeature)
+                }
+            }
+        }
+    }
+    return children
+}
 
-    [Research.SeedDiversity]: new LevelObject(baseData[Research.SeedDiversity]),
+function getDivision(feature: (HierarchicalFeature) | Category): Division {
+    if (Object.values(Category).includes(feature as Category)) {
+        return metadata[feature as Category][Info.Division]
+    }
+    let category = metadata[feature as (HierarchicalFeature)][Info.Category]
+    return metadata[category][Info.Division]
+}
+
+function getCategory(feature: HierarchicalFeature): Category {
+    return metadata[feature][Info.Category]
+}
+
+function getButton(division: Division) {
+    let id = `${division.toLowerCase()}Button`
+    return document.getElementById(id) as HTMLDivElement
+}
+
+function getTable(division: Division) {
+    let id = `${division.toLowerCase()}Table`
+    return document.getElementById(id) as HTMLTableElement
 }
 
 const updateSpeed = 20
@@ -270,11 +369,14 @@ function update() {
     updateDivisions()
 }
 
-function select(progression: Progression) {
-    if (metadata[progression][Info.Division] == Division.Economy) {
+function select(progression: HierarchicalFeature) {
+    let div = getDivision(progression)
+    if (div == Division.Economy) {
         selectBuilding(progression as Building)
-    } else if (metadata[progression][Info.Division] == Division.Technology) {
+    } else if (div == Division.Technology) {
         selectResearch(progression as Research)
+    } else if (div == Division.Military) {
+        selectUnit(progression as Unit)
     }
 }
 
@@ -292,18 +394,26 @@ function selectResearch(research: Research) {
     objects[research].select()
 }
 
-function createEffect(sourceKey: Progression, receiverKeys: Progression[], effectData: {
-    affects: Progression[],
+function selectUnit(unit: Unit) {
+    for (let trait of Object.values(Research)) {
+        objects[trait].selected = false
+    }
+    objects[unit].select()
+}
+
+function createEffect(sourceKey: Feature, receiverKeys: Feature[], effectData: {
+    affects: Feature[],
     effectType: EffectType,
+    requirements?: Requirement | (() => boolean)
     additive?: () => number,
     multiplcative?: () => number,
     exponential?: () => number,
-}, exclude = [] as Progression[]) {
+}, exclude = [] as Feature[]) {
 
     let effect = new Effect(sourceKey, receiverKeys, effectData)
     let source = objects[sourceKey]
     for (let k of receiverKeys) {
-        let key = k as Progression
+        let key = k as Feature
         if (key in exclude) {
             continue
         }
@@ -320,7 +430,7 @@ function createAllEffects() {
 }
 
 function categoryUnlocked(c: Category) {
-    for (let t of metadata[c][Info.Children]) {
+    for (let t of getFeatures(c)) {
         let traitKey = t as keyof typeof objects
         if (objects[traitKey].isUnlocked()) {
             return true
@@ -330,8 +440,9 @@ function categoryUnlocked(c: Category) {
 }
 
 function divisionUnlocked(d: Division) {
-    for (let c of metadata[d][Info.Category]) {
-        if (categoryUnlocked(c as Category)) {
+    for (let t of getFeatures(d)) {
+        let traitKey = t as keyof typeof objects
+        if (objects[traitKey].isUnlocked()) {
             return true
         }
     }
@@ -341,9 +452,9 @@ function divisionUnlocked(d: Division) {
 function updateDivisions() {
     for (let d of Object.values(Division)) {
         if (divisionUnlocked(d)) {
-            metadata[d].button!.style.display = ""
+            getButton(d)!.classList.remove("hidden")
         } else {
-            metadata[d].button!.style.display = "none"
+            getButton(d)!.classList.add("hidden")
         }
     }
 }
@@ -351,9 +462,9 @@ function updateDivisions() {
 function updateCategories() {
     for (let c of Object.values(Category)) {
         if (categoryUnlocked(c)) {
-            document.getElementById(c.toLowerCase())!.style.display = ""
+            document.getElementById(c.toLowerCase())!.classList.remove("hidden")
         } else {
-            document.getElementById(c.toLowerCase())!.style.display = "none"
+            document.getElementById(c.toLowerCase())!.classList.add("hidden")
         }
     }
 }
@@ -367,25 +478,25 @@ function createHeaderRow(category: Category): HTMLTableRowElement {
         headerRow.getElementsByClassName(name)[0].textContent = data[key]
     }
     var unlocked = false
-    for (let t of metadata[category][Info.Children]) {
+    for (let t of getFeatures(category)) {
         let traitKey = t as keyof typeof objects
         if (objects[traitKey].isUnlocked()) {
             unlocked = true
         }
     }
     if (!unlocked) {
-        headerRow.style.display = "none"
+        headerRow.classList.add("hidden")
     }
     headerRow.style.backgroundColor = metadata[category]["headerColor"]
     headerRow.style.color = "#FFFFFF"
     headerRow.id = category.toLowerCase()
-    let division = metadata[category][Info.Division]
-    var HTMLTable = metadata[division]["table"]
+    let division = getDivision(category)
+    var HTMLTable = getTable(division)
     HTMLTable?.append(headerRow)
     return headerRow
 }
 
-function createRow(attribute: Progression) {
+function createRow(attribute: HierarchicalFeature) {
     var template = document.getElementById("rowTemplate") as HTMLTemplateElement
     var row = template.content.firstElementChild!.cloneNode(true) as HTMLTableRowElement
     var obj = objects[attribute]
@@ -394,18 +505,18 @@ function createRow(attribute: Progression) {
     var button = row.getElementsByClassName("progressBar")[0] as HTMLDivElement
     button.onclick = () => select(attribute)
     if (!obj.isUnlocked()) {
-        row.style.display = "none"
+        row.classList.add("hidden")
     }
-    let division = metadata[attribute][Info.Division]
+    let division = getDivision(attribute)
     if (division != null) {
-        var HTMLTable = metadata[division]["table"]
+        var HTMLTable = getTable(division)
         HTMLTable?.append(row)
     }
     return row
 }
 
 function createRowsFromCategory(category: Category) {
-    for (let trait of metadata[category][Info.Children]) {
+    for (let trait of getFeatures(category)) {
         createRow(trait)
     }
 }
@@ -438,11 +549,11 @@ function setTab(element: HTMLSpanElement, tabName: string) {
 
     for (let i of tabsHTML!.children) {
         let tab = i as HTMLSpanElement
-        tab.style.display = "none"
+        tab.classList.add("hidden")
     }
     
     element.classList.add("w3-blue-gray")
-    selected!.style.display = "block"
+    selected!.classList.remove("hidden")
     
 }
 
@@ -539,7 +650,7 @@ function load() {
 function resetGame() {
     for (let k in objects) {
         let key = k as keyof typeof objects
-        objects[key].reset()
+        objects[key].hardReset()
     }
     selectBuilding(Building.Crops)
 }
@@ -551,8 +662,3 @@ setTab(document.getElementById("economyButton") as HTMLSpanElement, "economy")
 load()
 setInterval(update, 1000 / updateSpeed)
 setInterval(save, 3000)
-
-var canvas = document.querySelector('canvas') as HTMLCanvasElement
-var c = canvas.getContext('2d')
-canvas.width = 800
-canvas.height = 500
