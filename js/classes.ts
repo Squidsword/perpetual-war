@@ -110,10 +110,6 @@ class EffectMap {
         this.effects = effects
     }
 
-    setEffect(key: Feature, effect: Effect) {
-        this.effects[key] = effect
-    }
-
     getEffect(key: Feature) {
         return this.effects[key]
     }
@@ -224,7 +220,7 @@ abstract class GameObject {
 
     sendAffect(receiverKey: Feature, effect: Effect) {
         this.affectMap.setAffect(receiverKey, effect)
-        objects[receiverKey].effectMap.setEffect(this.type, effect)
+        objects[receiverKey].effectMap.effects[this.type] = effect
     }
 
     applyEffects(value = 0, type: EffectType) {

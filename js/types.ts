@@ -12,10 +12,6 @@ enum BattleInfo {
     Speed =  "SPEED"
 }
 
-enum EnemyUnit {
-    Clubsman = "CLUBSMAN"
-}
-
 enum Division {
     Economy = "ECONOMY",
     Technology = "TECHNOLOGY",
@@ -55,13 +51,17 @@ enum Augments {
     Intuition = "Intuition"
 }
 
-enum Category {
+enum EconomyCategory {
     Growth = "GROWTH",
     Discovery = "DISCOVERY",
-    Power = "POWER",
+    Power = "POWER"
+}
 
+enum ResearchCategory {
     Agriculture = "AGRIGULTURE",
+}
 
+enum MilitaryCategory {
     Infantry = "INFANTRY",
     Ranged = "RANGED",
     Cavalry = "CAVALRY"
@@ -72,8 +72,12 @@ enum EffectType {
     Speed = "SPEED"
 }
 
+type Category = EconomyCategory | ResearchCategory | MilitaryCategory
 type General = Info | Division | Resource | Building | Augments | Research | Category | EffectType | Unit
 type Hierarchical = Division | Category | Research | Building | Unit
 type Feature = Resource | Research | Building | Unit
 type HierarchicalFeature = Hierarchical & Feature
  
+function categoryValues() {
+    return (Object.values(EconomyCategory) as Category[]).concat(Object.values(ResearchCategory)).concat(Object.values(MilitaryCategory)) 
+}

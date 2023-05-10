@@ -6,29 +6,29 @@ const baseData = {
     [Building.Fields]: {
         requirements: (): boolean => objects[Building.Crops].getValue() >= 5,
         maxXp: 2000,
-        scaling: (level: number) => Math.pow(1.04, level) + 0.2 * level,
+        scaling: (level: number) => Math.pow(1.04, level) + 0.5 * level,
     }, 
     [Building.Barns]: {
         requirements: (): boolean => objects[Building.Fields].getValue() >= 10,
         maxXp: 20000,
-        scaling: (level: number) => Math.pow(1.06, level) + 0.2 * level,
+        scaling: (level: number) => Math.pow(1.06, level) + 0.5 * level,
     },
     [Building.Silos]: {
         requirements: (): boolean => objects[Building.Barns].getValue() >= 10,
         maxXp: 200000,
-        scaling: (level: number) => Math.pow(1.08, level) + 0.2 * level,
+        scaling: (level: number) => Math.pow(1.08, level) + 0.5 * level,
     },
 
     [Building.Learner]: {
         requirements: (): boolean => objects[Resource.Population].getValue() >= 100,
         maxXp: 2000,
-        scaling: (level: number) => Math.pow(1.02, level) + 0.2 * level,
+        scaling: (level: number) => Math.pow(1.02, level) + 0.5 * level,
     },
 
     [Building.Digger]: {
         requirements: (): boolean => objects[Resource.Population].getValue() >= 10000,
         maxXp: 100000,
-        scaling: (level: number) => Math.pow(1.02, level) + 0.2 * level,
+        scaling: (level: number) => Math.pow(1.02, level) + 0.5 * level,
     },
 
     [Research.SeedDiversity]: {
@@ -123,19 +123,19 @@ const effectData = {
         affects: [Building.Crops],
         effectType: EffectType.Power,
         requirements: () => objects[Research.SeedDiversity].isCompleted(),
-        multiplicative: () => 2 + objects[Building.Fields].getEffectiveValue() * 0.1
+        multiplicative: () => 2 + objects[Building.Fields].getEffectiveValue() * 0.05
     },
     [Research.Fences]: {
         affects: [Building.Fields],
         effectType: EffectType.Power,
         requirements: () => objects[Research.Fences].isCompleted(),
-        multiplicative: () => 2 + objects[Building.Barns].getEffectiveValue() * 0.1
+        multiplicative: () => 2 + objects[Building.Barns].getEffectiveValue() * 0.05
     },
     [Research.Sheds]: {
-        affects: [Building.Fields],
+        affects: [Building.Barns],
         effectType: EffectType.Power,
-        requirements: () => objects[Research.Fences].isCompleted(),
-        multiplicative: () => 2 + objects[Building.Barns].getEffectiveValue() * 0.1
+        requirements: () => objects[Research.Sheds].isCompleted(),
+        multiplicative: () => 2 + objects[Building.Silos].getEffectiveValue() * 0.05
     },
     [Resource.Population]: {
         affects: Object.values(Building),
@@ -154,7 +154,7 @@ const metadata = {
 
     },
 
-        [Category.Growth]: {
+        [EconomyCategory.Growth]: {
             [Info.Division]: Division.Economy,
             "headerColor": "rgb(38, 136, 38)",
             "headerData": {
@@ -167,19 +167,19 @@ const metadata = {
         },
 
             [Building.Crops]: {
-                [Info.Category]: Category.Growth,
+                [Info.Category]: EconomyCategory.Growth,
             },
             [Building.Fields]: {
-                [Info.Category]: Category.Growth,
+                [Info.Category]: EconomyCategory.Growth,
             },
             [Building.Barns]: {
-                [Info.Category]: Category.Growth,
+                [Info.Category]: EconomyCategory.Growth,
             },
             [Building.Silos]: {
-                [Info.Category]: Category.Growth,
+                [Info.Category]: EconomyCategory.Growth,
             },
 
-        [Category.Discovery]: {
+        [EconomyCategory.Discovery]: {
             [Info.Division]: Division.Economy,
             "headerColor": "#0892D0",
             "headerData": {
@@ -192,10 +192,10 @@ const metadata = {
         },
 
             [Building.Learner]: {
-                [Info.Category]: Category.Discovery,
+                [Info.Category]: EconomyCategory.Discovery,
             },
             
-        [Category.Power]: {
+        [EconomyCategory.Power]: {
             [Info.Division]: Division.Economy,
             "headerColor": "rgb(150,50,50)",
             "headerData": {
@@ -208,13 +208,13 @@ const metadata = {
         },
 
             [Building.Digger]: {
-                [Info.Category]: Category.Power,
+                [Info.Category]: EconomyCategory.Power,
             },
 
     [Division.Technology]: {
 
     },
-        [Category.Agriculture]: {
+        [ResearchCategory.Agriculture]: {
             [Info.Division]: Division.Technology,
             "headerColor": "rgb(38, 136, 38)",
             "headerData": {
@@ -226,20 +226,20 @@ const metadata = {
             },
         },
             [Research.SeedDiversity]: {
-                [Info.Category]: Category.Agriculture,
+                [Info.Category]: ResearchCategory.Agriculture,
             },
             [Research.Fences]: {
-                [Info.Category]: Category.Agriculture,
+                [Info.Category]: ResearchCategory.Agriculture,
             },
             [Research.Sheds]: {
-                [Info.Category]: Category.Agriculture,
+                [Info.Category]: ResearchCategory.Agriculture,
             },
 
     [Division.Military]: {
 
     },
 
-        [Category.Infantry]: {
+        [MilitaryCategory.Infantry]: {
             [Info.Division]: Division.Military,
             "headerColor": "rgb(138, 68, 68)",
             "headerData": {
@@ -252,10 +252,10 @@ const metadata = {
         },
 
             [Unit.Clubsman]: {
-                [Info.Category]: Category.Infantry
+                [Info.Category]: MilitaryCategory.Infantry
             },
 
-        [Category.Ranged]: {
+        [MilitaryCategory.Ranged]: {
             [Info.Division]: Division.Military,
             "headerColor": "rgb(38, 136, 38)",
             "headerData": {
@@ -267,7 +267,7 @@ const metadata = {
             },
         },
 
-        [Category.Cavalry]: {
+        [MilitaryCategory.Cavalry]: {
             [Info.Division]: Division.Military,
             "headerColor": "rgb(38, 136, 38)",
             "headerData": {
@@ -319,7 +319,7 @@ function getFeatures(parent: Category | Division) {
         let objectKey = k as keyof typeof metadata
         let objectMeta = metadata[objectKey]
         if (Info.Category in objectMeta) {
-            if (Object.values(Category).includes(parent as Category)) {
+            if (categoryValues().includes(parent as Category)) {
                 if (objectMeta[Info.Category] == parent) {
                     children.push(objectKey as HierarchicalFeature)
                 }
@@ -334,7 +334,7 @@ function getFeatures(parent: Category | Division) {
 }
 
 function getDivision(feature: (HierarchicalFeature) | Category): Division {
-    if (Object.values(Category).includes(feature as Category)) {
+    if (categoryValues().includes(feature as Category)) {
         return metadata[feature as Category][Info.Division]
     }
     let category = metadata[feature as (HierarchicalFeature)][Info.Category]
@@ -367,6 +367,7 @@ function update() {
     }
     updateCategories()
     updateDivisions()
+    battleUpdate()
 }
 
 function select(progression: HierarchicalFeature) {
@@ -460,7 +461,7 @@ function updateDivisions() {
 }
 
 function updateCategories() {
-    for (let c of Object.values(Category)) {
+    for (let c of categoryValues()) {
         if (categoryUnlocked(c)) {
             document.getElementById(c.toLowerCase())!.classList.remove("hidden")
         } else {
@@ -522,7 +523,7 @@ function createRowsFromCategory(category: Category) {
 }
 
 function createAllRows() {
-    for (let category of Object.values(Category)) {
+    for (let category of categoryValues()) {
         createHeaderRow(category)
         createRowsFromCategory(category)
     }
