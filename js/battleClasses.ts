@@ -6,6 +6,7 @@ class Commander {
     facingLeft: boolean
     positioning: {[key in MilitaryCategory]: number}
     colors: {[key in MilitaryCategory]: string}
+    temper: number
     constructor(name: CommanderName, baseData: {
         spawnPoint: number,
         positioning: {[key in MilitaryCategory]: number},
@@ -19,6 +20,7 @@ class Commander {
         this.facingLeft = baseData.facingLeft
         this.command = Command.Hold
         this.units = []
+        this.temper = 1
     }
 
     enlist(unit: BattleObject | BattleCategory) {
@@ -35,9 +37,15 @@ class Commander {
     }
 
     update() {
+        this.command = this.temper >= 1 ? Command.Hold : Command.Charge
+        if (this.facingLeft) {
+            this.command = Command.Charge
+        }
+        this.temper = Math.min(this.temper + applySpeed(0.3), 1)
         this.units.forEach(unit => {
             unit.update()
         })
+
     }
 
 }
@@ -56,10 +64,17 @@ abstract class BattleObject {
     x: number
     y: number
 
+    variance: number
+
     attackSpeed: number
     attackWindup: number
 
+    givenCommand: Command
+    reactionTime: number
+    reactionWindup: number
+
     aggressionRange: number
+
 
     constructor(type: BattleCategory, commander: Commander, baseData: {
         [BattleInfo.Category]: MilitaryCategory
@@ -78,11 +93,16 @@ abstract class BattleObject {
         this.range = baseData[BattleInfo.Range]
         this.speed = baseData[BattleInfo.Speed]
         this.x = commander.spawnPoint
-        this.y = Math.random() * 25
+        this.y = 0
         this.attackSpeed = 1
         this.attackWindup = 0
         this.aggressionRange = 20
+        this.reactionTime = 0
+        this.reactionWindup = 0;
+        this.givenCommand = commander.command
+        this.variance = (Math.random() - 0.5)
         this.applyAdjustments()
+        this.applyVariance()
     }
 
     update() {
@@ -90,26 +110,39 @@ abstract class BattleObject {
             this.commander.units.splice(this.commander.units.indexOf(this), 1)
             return
         }
+        this.updateCommand()
         this.act()
         this.draw()
     }
 
     act() {
-        if (this.commander.command = Command.Charge) {
+        if (this.isEnemyInAggressionRange(this.closestEnemy().enemy)) {
+            this.commander.temper = 0
+            this.commander.giveCommand(Command.Charge)
+        }
+        if (this.givenCommand == Command.Charge) {
             this.charge()
-        } else if (this.commander.command = Command.Hold) {
+        } else if (this.givenCommand == Command.Hold) {
             this.hold()
         }
     }
 
+    applyVariance() {
+        this.y = Math.random() * 20
+        this.reactionTime += (Math.random())
+    }
+
     charge() {
-        var closestEnemy = this.closestEnemyInRange()
+        var closestEnemy = this.closestEnemy()
         this.attackWindup += applySpeed(this.attackSpeed)
-        if (closestEnemy != null) {
+        if (closestEnemy.enemy == null) {
+            return
+        }
+        if (this.isEnemyInRange(closestEnemy.enemy)) {
             if (this.attackWindup >= 1) {
                 this.attackWindup = 0
-                this.attackEnemy(closestEnemy)
-                drawAttack(this, closestEnemy)
+                this.attackEnemy(closestEnemy.enemy)
+                drawAttack(this, closestEnemy.enemy)
             }
         } else {
             this.advance()
@@ -117,7 +150,28 @@ abstract class BattleObject {
     }
 
     hold() {
-        let diff = this.x - this.commander.positioning[this.category]
+        let closestEnemy = this.closestEnemy()
+        if (closestEnemy.enemy != null && this.isEnemyInAggressionRange(closestEnemy.enemy)) {
+            this.commander.temper = 0
+            return
+        }
+
+        this.recall()
+    }
+
+    updateCommand() {
+        if (this.commander.command == this.givenCommand) {
+            return
+        }
+        this.reactionWindup += applySpeed(1)
+        if (this.reactionWindup >= this.reactionTime) {
+            this.reactionWindup = 0
+            this.givenCommand = this.commander.command
+        }
+    }
+
+    recall() {
+        let diff = this.relativePosition() - this.commander.positioning[this.category] + this.variance
         if (Math.abs(diff) < 1) {
             return
         }
@@ -128,12 +182,16 @@ abstract class BattleObject {
         }
     }
 
+    relativePosition() {
+        return this.commander.facingLeft ? 100 - this.x : this.x
+    }
+
     advance() {
         this.x += (this.commander.facingLeft ? -1 : 1) * applySpeed(this.speed)
     }
 
     retreat() {
-        this.x -= (this.commander.facingLeft ? -1 : 1) * applySpeed(this.speed)
+        this.x -= (this.commander.facingLeft ? -1 : 1) * applySpeed(this.speed) * 0.7
     }
 
     draw() {
@@ -152,8 +210,27 @@ abstract class BattleObject {
         
     }
 
+    isEnemyInRange(enemy: BattleObject | null) {
+        if (enemy == null) {
+            return false
+        }
+        return Math.abs(enemy.x - this.x) <= this.range
+    }
+
+    isEnemyInAggressionRange(enemy: BattleObject | null) {
+        if (enemy == null) {
+            return false
+        }
+        return Math.abs(enemy.x - this.x) <= this.aggressionRange
+    }
+
     closestEnemyInRange() {
-        return this.closestEnemy().enemy
+        let vals = this.closestEnemy()
+        if (vals.distance <= this.range) {
+            return vals.enemy
+        } else {
+            return null
+        }
     }
     
     /**
@@ -171,7 +248,7 @@ abstract class BattleObject {
             let commander = commanders[c]
             for (let u of commander.units) {
                 let distance = Math.abs(u.x - this.x)
-                if (distance <= this.range && distance < closestDistance) {
+                if (distance < closestDistance) {
                     closestEnemy = u
                 }
                 closestDistance = Math.min(distance, closestDistance)

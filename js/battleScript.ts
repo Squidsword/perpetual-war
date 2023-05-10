@@ -17,28 +17,23 @@ const enemyBattleColors = {
     [MilitaryCategory.Cavalry]: "rgb(100, 100, 0)",
 }
 
-const playerPositioning = {
-    [MilitaryCategory.Infantry]: 25,
+const defaultPositioning = {
+    [MilitaryCategory.Infantry]: 20,
     [MilitaryCategory.Ranged]: 15,
     [MilitaryCategory.Cavalry]: 5,
 }
 
-const enemyPositioning = {
-    [MilitaryCategory.Infantry]: 75,
-    [MilitaryCategory.Ranged]: 85,
-    [MilitaryCategory.Cavalry]: 95,
-}
 
 const CommanderInfo = {
     [CommanderName.Player]: {
         colors: playerBattleColors,
-        positioning: playerPositioning,
+        positioning: defaultPositioning,
         spawnPoint: 0,
         facingLeft: false,
     },
     [CommanderName.Enemy]: {
         colors: enemyBattleColors,
-        positioning: enemyPositioning,
+        positioning: defaultPositioning,
         spawnPoint: 100,
         facingLeft: true,
     }
@@ -72,7 +67,7 @@ const baseStats = {
         [BattleInfo.Attack]: 2,
         [BattleInfo.Defense]: 0,
         [BattleInfo.Speed]: 1.6,
-        [BattleInfo.Range]: 8,
+        [BattleInfo.Range]: 2,
     }
 }
 
@@ -97,7 +92,7 @@ for (let i = 0; i < 1; i++) {
     commanders[CommanderName.Player].enlist(new RangedObject(BattleRanged.Slinger, commanders[CommanderName.Player], baseStats[BattleRanged.Slinger]))
 }
 
-for (let i = 0; i < 1; i++) {
+for (let i = 0; i < 2; i++) {
     commanders[CommanderName.Player].enlist(new InfantryObject(BattleInfantry.Clubsman, commanders[CommanderName.Player], baseStats[BattleInfantry.Clubsman]))
 }
 
