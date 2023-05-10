@@ -8,7 +8,12 @@ enum BattleInfo {
     Speed =  "SPEED"
 }
 
-enum BattleState {
+enum CommanderName {
+    Player = "PLAYER",
+    Enemy = "ENEMY",
+}
+
+enum Command {
     Charge = "CHARGE",
     Hold = "HOLD",
 }
@@ -22,7 +27,7 @@ enum BattleRanged {
 }
 
 enum BattleCavalry {
-    Horseman = "HORSEMAN",
+    Scout = "HORSEMAN",
 }
 
-type BattleUnit = BattleInfantry | BattleRanged | BattleCavalry
+type BattleCategory = BattleInfantry | BattleRanged | BattleCavalry

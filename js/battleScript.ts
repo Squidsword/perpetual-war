@@ -3,13 +3,51 @@ var c = canvas.getContext('2d')
 canvas.width = 868
 canvas.height = 200
 
-const battleColors = {
-    [MilitaryCategory.Infantry]: ["rgb(0, 100, 200)", "rgb(0, 50, 100)"],
-    [MilitaryCategory.Ranged]: ["rgb(100, 200, 0)", "rgb(50, 100, 0)"],
-    [MilitaryCategory.Cavalry]: ["rgb(200, 200, 0)", "rgb(100, 100, 0)"],
+const battleObjectSize = 10
+
+const playerBattleColors = {
+    [MilitaryCategory.Infantry]: "rgb(0, 100, 200)",
+    [MilitaryCategory.Ranged]: "rgb(100, 200, 0)",
+    [MilitaryCategory.Cavalry]: "rgb(200, 200, 0)",
 }
 
-const battleObjectSize = 10
+const enemyBattleColors = {
+    [MilitaryCategory.Infantry]: "rgb(0, 50, 100)",
+    [MilitaryCategory.Ranged]: "rgb(50, 100, 0)",
+    [MilitaryCategory.Cavalry]: "rgb(100, 100, 0)",
+}
+
+const playerPositioning = {
+    [MilitaryCategory.Infantry]: 25,
+    [MilitaryCategory.Ranged]: 15,
+    [MilitaryCategory.Cavalry]: 5,
+}
+
+const enemyPositioning = {
+    [MilitaryCategory.Infantry]: 75,
+    [MilitaryCategory.Ranged]: 85,
+    [MilitaryCategory.Cavalry]: 95,
+}
+
+const CommanderInfo = {
+    [CommanderName.Player]: {
+        colors: playerBattleColors,
+        positioning: playerPositioning,
+        spawnPoint: 0,
+        facingLeft: false,
+    },
+    [CommanderName.Enemy]: {
+        colors: enemyBattleColors,
+        positioning: enemyPositioning,
+        spawnPoint: 100,
+        facingLeft: true,
+    }
+}
+
+const commanders = {
+    [CommanderName.Player]: new Commander(CommanderName.Player, CommanderInfo[CommanderName.Player]),
+    [CommanderName.Enemy]: new Commander(CommanderName.Enemy, CommanderInfo[CommanderName.Enemy]),
+}
 
 const baseStats = {
     [BattleInfantry.Clubsman]: {
@@ -25,14 +63,29 @@ const baseStats = {
         [BattleInfo.Health]: 6,
         [BattleInfo.Attack]: 2,
         [BattleInfo.Defense]: 0,
-        [BattleInfo.Speed]: 1,
+        [BattleInfo.Speed]: 1.6,
+        [BattleInfo.Range]: 8,
+    },
+    [BattleCavalry.Scout]: {
+        [BattleInfo.Category]: MilitaryCategory.Cavalry,
+        [BattleInfo.Health]: 6,
+        [BattleInfo.Attack]: 2,
+        [BattleInfo.Defense]: 0,
+        [BattleInfo.Speed]: 1.6,
         [BattleInfo.Range]: 8,
     }
 }
 
-let battleObjects = [new InfantryObject(BattleInfantry.Clubsman, true, baseStats[BattleInfantry.Clubsman]), 
-                    new InfantryObject(BattleInfantry.Clubsman, false, baseStats[BattleInfantry.Clubsman]),
-                    new RangedObject(BattleRanged.Slinger, false, baseStats[BattleRanged.Slinger])] as BattleObject[]
+function getClass(battleCategory: BattleCategory) {
+    if (battleCategory in BattleInfantry) {
+        return InfantryObject
+    } else if (battleCategory in BattleRanged) {
+        return RangedObject
+    } else {
+        return CavalryObject
+    }
+}
+
 
 // for (let i = 0; i < 100; i++) {
 //     let team = Math.random() < 0.5 ? true : false
@@ -40,25 +93,28 @@ let battleObjects = [new InfantryObject(BattleInfantry.Clubsman, true, baseStats
 //     battleObjects.push(slinger)
 // }
 
-for (let i = 0; i < 50; i++) {
-    let slinger = new RangedObject(BattleRanged.Slinger, true, baseStats[BattleRanged.Slinger])
-    battleObjects.push(slinger)
+for (let i = 0; i < 1; i++) {
+    commanders[CommanderName.Player].enlist(new RangedObject(BattleRanged.Slinger, commanders[CommanderName.Player], baseStats[BattleRanged.Slinger]))
 }
 
-for (let i = 0; i < 50; i++) {
-    let clubsman = new InfantryObject(BattleInfantry.Clubsman, false, baseStats[BattleInfantry.Clubsman])
-    battleObjects.push(clubsman)
+for (let i = 0; i < 1; i++) {
+    commanders[CommanderName.Player].enlist(new InfantryObject(BattleInfantry.Clubsman, commanders[CommanderName.Player], baseStats[BattleInfantry.Clubsman]))
+}
+
+for (let i = 0; i < 2; i++) {
+    commanders[CommanderName.Enemy].enlist(new InfantryObject(BattleInfantry.Clubsman, commanders[CommanderName.Enemy], baseStats[BattleInfantry.Clubsman]))
 }
 
 
 function battleUpdate() {
     clearCanvas()
-    updateBattleObjects()
+    updateCommanders()
 }
 
-function updateBattleObjects() {
-    for (let battleObject of battleObjects) {
-        battleObject.update()
+function updateCommanders() {
+    for (let k in commanders) {
+        let objectKey = k as keyof typeof commanders
+        commanders[objectKey].update()
     }
 }
 
@@ -89,7 +145,7 @@ function drawAttack(source: BattleObject, destination: BattleObject) {
     let p1 = {x: xToPixel(source.x) + battleObjectSize * 0.707, y: yToPixel(source.y) - battleObjectSize*1.707}
     let p2 = {x: xToPixel(destination.x) - battleObjectSize * 0.707, y: yToPixel(destination.y) - battleObjectSize * 1.707}
 
-    let ctr = {x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 + 10}
+    let ctr = {x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 + 10 + Math.abs(p2.x - p1.x)/2}
     let diffX = p1.x - ctr.x
     let diffY = p1.y - ctr.y
     let radius = Math.abs(Math.sqrt(diffX*diffX + diffY*diffY))
