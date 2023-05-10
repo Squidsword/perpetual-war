@@ -29,7 +29,7 @@ abstract class BattleObject {
         this.health = baseData[BattleInfo.Health]
         this.attack = baseData[BattleInfo.Attack]
         this.defense = baseData[BattleInfo.Defense]
-        this.range = baseData[BattleInfo.Range]
+        this.range = baseData[BattleInfo.Range] + (Math.random() - 0.5) * (baseData[BattleInfo.Category] == MilitaryCategory.Ranged ? 2 : 1)
         this.speed = baseData[BattleInfo.Speed]
         this.x = ally ? 0 : 100
         this.y = Math.random() * 5
@@ -91,14 +91,20 @@ abstract class BattleObject {
     }
 
     receiveDamage(damage: number) {
-        return this.health -= damage - this.defense
+        return this.health -= Math.max(0, damage)
+    }
+
+    receivePostmitigationDamage(damage: number) {
+        return this.health -= Math.max(0, damage - this.defense)
     }
 
     inflictDamage(enemy: BattleObject, damage: number) {
-        enemy.receiveDamage(damage)
+        enemy.receivePostmitigationDamage(damage)
     }
 
-    abstract retaliate(enemy: BattleObject): void
+    abstract retaliate(enemy: BattleObject, reflected: number): void
+
+    abstract getRetaliated(enemy: BattleObject, reflected: number): void
 
     abstract attackEnemy(enemy: BattleObject): void
 
@@ -111,15 +117,19 @@ class InfantryObject extends BattleObject {
 
     attackEnemy(enemy: BattleObject): void {
         enemy.getAttackedByEnemy(this)
-        enemy.retaliate(this)
     }
 
     getAttackedByEnemy(enemy: BattleObject): void {
-        this.health -= Math.max(0, enemy.attack - this.defense)
+        this.receivePostmitigationDamage(enemy.attack)
+        this.retaliate(enemy, 0.5)
     }
 
-    retaliate(enemy: BattleObject): void {
-        enemy.getAttackedByEnemy(this)
+    retaliate(enemy: BattleObject, reflected: number): void {
+        enemy.getRetaliated(this, reflected)
+    }
+
+    getRetaliated(enemy: BattleObject, reflected: number): void {
+        this.receiveDamage((enemy.attack - this.defense) * reflected)
     }
 }
 
@@ -127,7 +137,6 @@ class RangedObject extends BattleObject {
 
     attackEnemy(enemy: BattleObject): void {
         enemy.getAttackedByEnemy(this)
-        enemy.retaliate(this)
     }
 
     getAttackedByEnemy(enemy: BattleObject): void {
@@ -135,7 +144,11 @@ class RangedObject extends BattleObject {
     }
 
     retaliate(enemy: BattleObject): void {
-        enemy.getAttackedByEnemy(this)
+        return
+    }
+
+    getRetaliated(enemy: BattleObject, reflected: number): void {
+        return
     }
 }
 
@@ -158,16 +171,19 @@ class CavalryObject extends BattleObject {
     }
 
     attackEnemy(enemy: BattleObject): void {
-        if (this.firstStrikeWindup >= 1) {
-            enemy.getAttackedByEnemy(this)
-        }
+        enemy.getAttackedByEnemy(this)
     }
 
     getAttackedByEnemy(enemy: BattleObject): void {
-        this.health -= Math.max(0, enemy.attack - this.defense)
+        this.receivePostmitigationDamage(enemy.attack)
+        this.retaliate(enemy, 0.5)
     }
 
-    retaliate(enemy: BattleObject): void {
-        enemy.getAttackedByEnemy(this)
+    retaliate(enemy: BattleObject, reflected: number): void {
+        enemy.getRetaliated(this, reflected)
+    }
+
+    getRetaliated(enemy: BattleObject, reflected: number): void {
+        this.receiveDamage((enemy.attack - this.defense) * reflected)
     }
 }

@@ -34,6 +34,14 @@ let battleObjects = [new InfantryObject(BattleInfantry.Clubsman, true, baseStats
                     new InfantryObject(BattleInfantry.Clubsman, false, baseStats[BattleInfantry.Clubsman]),
                     new RangedObject(BattleRanged.Slinger, false, baseStats[BattleRanged.Slinger])] as BattleObject[]
 
+// for (let i = 0; i < 100; i++) {
+//     let team = Math.random() < 0.5 ? true : false
+//     let slinger = Math.random() < 0.5 ? new InfantryObject(BattleInfantry.Clubsman, team, baseStats[BattleInfantry.Clubsman]) : new RangedObject(BattleRanged.Slinger, team, baseStats[BattleRanged.Slinger])
+//     battleObjects.push(slinger)
+// }
+
+
+
 function battleUpdate() {
     clearCanvas()
     updateBattleObjects()
@@ -72,7 +80,7 @@ function drawAttack(source: BattleObject, destination: BattleObject) {
     let p1 = {x: xToPixel(source.x) + battleObjectSize * 0.707, y: yToPixel(source.y) - battleObjectSize*1.707}
     let p2 = {x: xToPixel(destination.x) - battleObjectSize * 0.707, y: yToPixel(destination.y) - battleObjectSize * 1.707}
 
-    let ctr = {x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2}
+    let ctr = {x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 + 10}
     let diffX = p1.x - ctr.x
     let diffY = p1.y - ctr.y
     let radius = Math.abs(Math.sqrt(diffX*diffX + diffY*diffY))
