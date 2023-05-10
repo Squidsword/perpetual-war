@@ -83,6 +83,7 @@ abstract class BattleObject {
         [BattleInfo.Category]: MilitaryCategory
         [BattleInfo.Health]: number
         [BattleInfo.Attack]: number
+        [BattleInfo.AttackSpeed]: number
         [BattleInfo.Defense]: number
         [BattleInfo.Range]: number
         [BattleInfo.Speed]: number
@@ -92,19 +93,19 @@ abstract class BattleObject {
         this.category = baseData[BattleInfo.Category]
         this.health = baseData[BattleInfo.Health]
         this.attack = baseData[BattleInfo.Attack]
+        this.attackSpeed = baseData[BattleInfo.AttackSpeed]
         this.defense = baseData[BattleInfo.Defense]
         this.range = baseData[BattleInfo.Range]
         this.speed = baseData[BattleInfo.Speed]
         this.x = commander.spawnPoint
         this.y = 0
-        this.attackSpeed = 1
+        
         this.attackWindup = 0
         this.aggressionRange = 20
         this.reactionTime = 0
         this.reactionWindup = 0;
         this.givenCommand = commander.command
         this.variance = (Math.random() - 0.5)
-        this.applyAdjustments()
         this.applyVariance()
     }
 
@@ -141,7 +142,12 @@ abstract class BattleObject {
         this.attackWindup += applySpeed(this.attackSpeed)
         if (closestEnemy.enemy == null) {
             if (this.commander.facingLeft) {
-                this.advance()
+                if (this.reactionWindup >= this.reactionTime) {
+                    this.advance()
+                } else {
+                    this.reactionWindup += applySpeed(1)
+                }
+
             }
             return
         }
@@ -211,10 +217,6 @@ abstract class BattleObject {
 
     isAlive() {
         return this.health > 0
-    }
-
-    applyAdjustments() {
-        
     }
 
     isEnemyInRange(enemy: BattleObject | null) {
@@ -298,7 +300,8 @@ class InfantryObject extends BattleObject {
         this.inflictTrueDamage(enemy, (this.attack - enemy.defense) * reflected)
     }
 
-    applyAdjustments() {
+    applyVariance() {
+        super.applyVariance()
         this.range += Math.random() - 0.5
     }
 }
@@ -313,9 +316,9 @@ class RangedObject extends BattleObject {
         return
     }
 
-    applyAdjustments() {
+    applyVariance() {
+        super.applyVariance()
         this.range += (Math.random() - 0.5) * 2.5
-        this.attackSpeed = 0.7
         this.commander.facingLeft ? this.x += 5 : this.x -= 5
     }
 }
