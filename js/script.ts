@@ -214,7 +214,7 @@ const metadata = {
     [Division.Technology]: {
 
     },
-        [ResearchCategory.Agriculture]: {
+        [TechnologyCategory.Agriculture]: {
             [Info.Division]: Division.Technology,
             "headerColor": "rgb(38, 136, 38)",
             "headerData": {
@@ -226,13 +226,13 @@ const metadata = {
             },
         },
             [Research.SeedDiversity]: {
-                [Info.Category]: ResearchCategory.Agriculture,
+                [Info.Category]: TechnologyCategory.Agriculture,
             },
             [Research.Fences]: {
-                [Info.Category]: ResearchCategory.Agriculture,
+                [Info.Category]: TechnologyCategory.Agriculture,
             },
             [Research.Sheds]: {
-                [Info.Category]: ResearchCategory.Agriculture,
+                [Info.Category]: TechnologyCategory.Agriculture,
             },
 
     [Division.Military]: {
@@ -361,10 +361,7 @@ const baseGameSpeed = 1
 const units = ["", "k", "M", "B", "T", "Qa", "Qi", "Sx", "Sp", "Oc", "Nn"];
 
 function update() {
-    for (let keyString in objects) {
-        let key = keyString as keyof typeof objects
-        objects[key].update()
-    }
+    updateObjects()
     updateCategories()
     updateDivisions()
     battleUpdate()
@@ -457,6 +454,13 @@ function updateDivisions() {
         } else {
             getButton(d)!.classList.add("hidden")
         }
+    }
+}
+
+function updateObjects() {
+    for (let keyString in objects) {
+        let key = keyString as keyof typeof objects
+        objects[key].update()
     }
 }
 
