@@ -1,0 +1,118 @@
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://www.w3schools.com/w3css/4/w3.css">
+    <link rel="stylesheet" href="css/styles.css"> 
+    <link rel="stylesheet" href="css/dark.css"> 
+    <title>Perpetual War</title>
+</head>
+<body id="body" class="dark">
+    <div class="w3-margin">
+        <h1> Perpetual War </h1>
+        <div style="width: 82rem; height: 40rem"> 
+            <div id="resourceDisplays", class="panel w3-padding" style="width: 20rem; height: auto; float: left">
+                <div id="timeDisplay", style="margin-bottom: 0.5em;">
+                    <div id="year" style="font-size: large;"> Year 1</div>
+                    <div id="day" style="color: rgb(175,175,175)"> Day 1</div>
+                </div>
+                
+                <div id="populationDisplay">
+                    <div style="color:gray">Population</div>
+                    <span id="population" style="font-size: large; color:rgb(191, 158, 116)">1</span>
+                </div>
+            
+                <div id = "scienceDisplay" class="hidden">
+                    <div style="color:gray"> Science </div>
+                    <span id="science" style="font-size: large; color:#0892D0">0</span>
+                </div>
+                <div id="capitalDisplay">
+                    <span style="color:gray ">Capital</span>
+                    <div style="font-size: large" id="capital">
+                        <span></span>
+                        <span></span>
+                        <span></span>
+                        <span>0c</span>
+                    </div>
+                </div>
+
+            </div>
+            <div class="panel w3-margin-left" id="tabButtons" style="width: 60rem; height: 5/3rem; float: left">
+                <div class="w3-button w3-bar-item" id="economyButton" style="max-width: 12rem;" onclick="setTab(this, 'economy')">Economy</div>
+                <div class="hidden w3-button w3-bar-item" id="technologyButton" onclick="setTab(this, 'technology')">Technology</div>
+                <div class="hidden w3-button w3-bar-item" id="militaryButton" onclick="setTab(this, 'military')">Military</div>
+                <div class="w3-button w3-bar-item" id="battlegroundsButton" onclick="setTab(this, 'battlegrounds')">Battlegrounds</div>
+                <div class="hidden w3-button w3-bar-item" id="prestigeButton" onclick="setTab(this, 'prestige')">Prestige</div>
+                <div class="w3-button w3-bar-item" id="settingsButton" style="float: right;" onclick="setTab(this, 'settings')">Settings</div>
+            </div>
+            <div class="panel w3-margin-left w3-margin-top w3-padding" id="tabs" style="width: 60rem; height: auto; float: left">
+                <template id="headerTemplate">
+                    <tr>
+                        <th class="category"></th>
+                        <th class="level"></th>
+                        <th class="effect"></th>
+                        <th class="xpGain">Pace</th>
+                        <th class="xpLeft">Remaining</th>
+                        <th class="pastLevels" style="display: none;">Intuition</th>
+                    </tr>
+                </template>
+                <template id="rowTemplate">
+                    <tr>
+                        <td>
+                            <div class="progress-bar progressBar tooltip">
+                                <div class="progress-fill progressFill"></div>
+                                <div class="progress-text name">Task</div>
+                            </div>
+                        </td>
+                        <td class="level"></td>
+                        <td class="value">
+                            <div class="effect"></div>
+                            <div class="income">
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </div>
+                        </td>
+                        <td class="xpGain"></td>
+                        <td class="xpLeft"></td>
+                        <td class="pastLevels"></td>
+                    </tr>
+                </template>
+                <div class="tab" id="economy">
+                    <table id="economyTable" class="w3-table w3-bordered">
+
+                    </table>
+                </div>
+                <div class="tab hidden" id="technology">
+                    <table id="technologyTable" class="w3-table w3-bordered">
+
+                    </table>
+                </div>
+                <div class="tab hidden" id="military">
+                    <table id="militaryTable" class="w3-table w3-bordered">
+
+                    </table>
+                </div>
+                <div class="tab hidden" id="battlegrounds">
+                    <canvas> </canvas>
+                </div>
+                <div class="tab hidden" id="prestige">
+                    prestige
+                </div>
+                <div class="tab hidden" id="settings">
+                    <button class="w3-button button w3-red" onClick="resetGame()">Hard Reset </button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+<script src="js/types.js"></script>
+<script src="js/battleTypes.js"></script>
+<script src="js/classes.js"></script>
+<script src="js/battleClasses.js"></script>
+<script src="js/script.js"></script>
+<script src="js/battleScript.js"></script>
+</html>
