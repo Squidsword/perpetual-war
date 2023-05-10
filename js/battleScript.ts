@@ -14,15 +14,15 @@ const battleObjectSize = 10
 const baseStats = {
     [BattleInfantry.Clubsman]: {
         [BattleInfo.Category]: MilitaryCategory.Infantry,
-        [BattleInfo.Health]: 10,
+        [BattleInfo.Health]: 12,
         [BattleInfo.Attack]: 2,
         [BattleInfo.Defense]: 0,
-        [BattleInfo.Speed]: 1,
+        [BattleInfo.Speed]: 1.6,
         [BattleInfo.Range]: 2,
     },
     [BattleRanged.Slinger]: {
         [BattleInfo.Category]: MilitaryCategory.Ranged,
-        [BattleInfo.Health]: 1,
+        [BattleInfo.Health]: 6,
         [BattleInfo.Attack]: 2,
         [BattleInfo.Defense]: 0,
         [BattleInfo.Speed]: 1,

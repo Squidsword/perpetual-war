@@ -29,10 +29,10 @@ abstract class BattleObject {
         this.health = baseData[BattleInfo.Health]
         this.attack = baseData[BattleInfo.Attack]
         this.defense = baseData[BattleInfo.Defense]
-        this.range = baseData[BattleInfo.Range] + (Math.random() - 0.5) * (baseData[BattleInfo.Category] == MilitaryCategory.Ranged ? 2 : 1)
+        this.range = baseData[BattleInfo.Range] + (Math.random() - 0.5) * (baseData[BattleInfo.Category] == MilitaryCategory.Ranged ? 2.5 : 1)
         this.speed = baseData[BattleInfo.Speed]
         this.x = ally ? 0 : 100
-        this.y = Math.random() * 5
+        this.y = Math.random() * 25
         this.attackSpeed = 1
         this.attackWindup = 0
     }
@@ -61,7 +61,7 @@ abstract class BattleObject {
     }
 
     advance() {
-        this.x += 10 * (this.ally ? 1 : -1) * applySpeed(this.speed)
+        this.x += (this.ally ? 1 : -1) * applySpeed(this.speed)
     }
 
     draw() {
