@@ -44,7 +44,7 @@ const commanders = {
     [CommanderName.Enemy]: new Commander(CommanderName.Enemy, CommanderInfo[CommanderName.Enemy]),
 }
 
-const baseStats = {
+const battleBaseData = {
     [BattleInfantry.Clubsman]: {
         [BattleInfo.Category]: MilitaryCategory.Infantry,
         [BattleInfo.Health]: 12,
@@ -72,34 +72,14 @@ const baseStats = {
 }
 
 function getClass(battleCategory: BattleCategory) {
-    if (battleCategory in BattleInfantry) {
+    if (battleBaseData[battleCategory][BattleInfo.Category] === MilitaryCategory.Infantry) {
         return InfantryObject
-    } else if (battleCategory in BattleRanged) {
-        return RangedObject
-    } else {
+    } else if (battleBaseData[battleCategory][BattleInfo.Category] == MilitaryCategory.Ranged) {
+        return RangedObject 
+    } else if (battleBaseData[battleCategory][BattleInfo.Category] == MilitaryCategory.Cavalry) {
         return CavalryObject
     }
 }
-
-
-// for (let i = 0; i < 100; i++) {
-//     let team = Math.random() < 0.5 ? true : false
-//     let slinger = Math.random() < 0.5 ? new InfantryObject(BattleInfantry.Clubsman, team, baseStats[BattleInfantry.Clubsman]) : new RangedObject(BattleRanged.Slinger, team, baseStats[BattleRanged.Slinger])
-//     battleObjects.push(slinger)
-// }
-
-for (let i = 0; i < 1; i++) {
-    commanders[CommanderName.Player].enlist(new RangedObject(BattleRanged.Slinger, commanders[CommanderName.Player], baseStats[BattleRanged.Slinger]))
-}
-
-for (let i = 0; i < 2; i++) {
-    commanders[CommanderName.Player].enlist(new InfantryObject(BattleInfantry.Clubsman, commanders[CommanderName.Player], baseStats[BattleInfantry.Clubsman]))
-}
-
-for (let i = 0; i < 2; i++) {
-    commanders[CommanderName.Enemy].enlist(new InfantryObject(BattleInfantry.Clubsman, commanders[CommanderName.Enemy], baseStats[BattleInfantry.Clubsman]))
-}
-
 
 function battleUpdate() {
     clearCanvas()
@@ -170,3 +150,25 @@ function yToPixel(y: number) {
 function clearCanvas() {
     c!.clearRect(0, 0, canvas.width, canvas.height)
 }
+
+
+function simulateRandomBattle() {
+    for (let i = 0; i < 50; i++) {
+        let ranged = Math.random() < 0.5 ? true : false
+        if (ranged) {
+            commanders[CommanderName.Player].enlist(BattleRanged.Slinger)
+        } else {
+            commanders[CommanderName.Player].enlist(BattleInfantry.Clubsman)
+        }
+    }
+    for (let i = 0; i < 50; i++) {
+        let ranged = Math.random() < 0.5 ? true : false
+        if (ranged) {
+            commanders[CommanderName.Enemy].enlist(BattleRanged.Slinger)
+        } else {
+            commanders[CommanderName.Enemy].enlist(BattleInfantry.Clubsman)
+        }
+    }
+}
+
+simulateRandomBattle()

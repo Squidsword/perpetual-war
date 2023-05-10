@@ -28,7 +28,10 @@ class Commander {
             this.units.push(unit)
         } else {
             let battleClass = getClass(unit)
-            this.units.push(new battleClass(unit, this, baseStats[unit]))
+            if (!battleClass) {
+                throw new Error("Invalid battle category")
+            }
+            this.units.push(new battleClass(unit, this, battleBaseData[unit]))
         }
     }
 
@@ -130,12 +133,16 @@ abstract class BattleObject {
     applyVariance() {
         this.y = Math.random() * 20
         this.reactionTime += (Math.random())
+        this.x += this.variance
     }
 
     charge() {
         var closestEnemy = this.closestEnemy()
         this.attackWindup += applySpeed(this.attackSpeed)
         if (closestEnemy.enemy == null) {
+            if (this.commander.facingLeft) {
+                this.advance()
+            }
             return
         }
         if (this.isEnemyInRange(closestEnemy.enemy)) {
@@ -309,6 +316,7 @@ class RangedObject extends BattleObject {
     applyAdjustments() {
         this.range += (Math.random() - 0.5) * 2.5
         this.attackSpeed = 0.7
+        this.commander.facingLeft ? this.x += 5 : this.x -= 5
     }
 }
 
