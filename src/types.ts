@@ -37,6 +37,7 @@ enum Research {
 
 enum Unit {
     Clubsman = "CLUBSMAN",
+    Slinger = "SLINGER",
 }
 
 enum Augments {

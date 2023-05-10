@@ -119,6 +119,10 @@ abstract class BattleObject {
         this.draw()
     }
 
+    die() {
+        this.commander.units.splice(this.commander.units.indexOf(this), 1)
+    }
+
     act() {
         if (this.isEnemyInAggressionRange(this.closestEnemy().enemy)) {
             this.commander.temper = 0

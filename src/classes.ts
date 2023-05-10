@@ -173,20 +173,27 @@ class ActionList {
 class GameEvent {
     actionList: ActionList
     requirements: Requirement
-    executed = false
 
     constructor(actionList: ActionList, requirements: Requirement) {
         this.actionList = actionList
         this.requirements = requirements ? requirements : new Requirement()
     }
 
-    execute() {
-        if (!this.executed && this.requirements.isSatisfied()) {
+    update() {
+        if (this.requirements.isSatisfied()) {
             this.actionList.executeActions()
-            this.executed = true
         }
     }
 
+}
+
+class OneTimeEvent extends GameEvent {
+    executed = false
+    update() {
+        if (!this.executed) {
+            super.update()
+        }
+    }
 }
 
 abstract class GameObject {
@@ -346,6 +353,8 @@ class LevelObject extends GameObject {
     maxXp: number
     pastLevels: number
 
+    levelUpEvent: (level?: number) => void
+
     selected = false
     constructor(type: Feature, baseData: {
         level?: number,
@@ -356,6 +365,7 @@ class LevelObject extends GameObject {
         maxXp: number,
         cost?: [Resource, number]
         scaling?: (l: number) => number
+        levelUpEvent?: (level?: number) => void
     }) {
         super(type, baseData)
         this.level = baseData.level ? baseData.level : 0
@@ -365,6 +375,7 @@ class LevelObject extends GameObject {
         this.cost = baseData.cost
         this.pastLevels = baseData.pastLevels ? baseData.pastLevels : 0
         this.scaling = baseData.scaling ? baseData.scaling : () => 1
+        this.levelUpEvent = baseData.levelUpEvent ? baseData.levelUpEvent : () => {}
     }
 
     update() {
@@ -423,6 +434,7 @@ class LevelObject extends GameObject {
             this.xp -= this.maxXp
             this.level += 1
             this.maxXp = this.baseMaxXp * this.scaling(this.level)
+            this.levelUpEvent()
         }
     }
 
@@ -477,6 +489,61 @@ class LevelObject extends GameObject {
         this.maxXp = this.baseMaxXp
     }
 
+}
+
+class ConsumableObject extends LevelObject {
+    totalLevels: number
+    constructor(type: Feature, baseData: {
+        level?: number,
+        pastLevels?: number,
+        totalLevels?: number,
+        xp?: number,
+        requirements?: Requirement | (() => boolean),
+        affects?: EffectMap,
+        maxXp: number,
+        cost?: [Resource, number]
+        scaling?: (l: number) => number
+        levelUpEvent?: () => void
+    }) {
+        super(type, baseData)
+        this.level = baseData.level ? baseData.level : 0
+        this.totalLevels = baseData.totalLevels ? baseData.totalLevels : this.level
+        this.xp = baseData.xp ? baseData.xp : 0
+        this.baseMaxXp = baseData.maxXp
+        this.maxXp = baseData.maxXp
+        this.cost = baseData.cost
+        this.pastLevels = baseData.pastLevels ? baseData.pastLevels : 0
+        this.scaling = baseData.scaling ? baseData.scaling : () => 1
+    }
+
+    getTotalLevels(): number {
+        return this.totalLevels
+    }
+
+    consumeLevel() {
+        if (this.level > 0) {
+            this.level -= 1
+            this.maxXp = this.baseMaxXp * this.scaling(this.level)
+        }
+    }
+
+    load(copyObj: any): boolean {
+        super.load(copyObj)
+        this.totalLevels = copyObj.totalLevels ? copyObj.totalLevels : this.level
+        return true
+    }
+    
+    hardReset() {
+        super.hardReset()
+        this.totalLevels = 0
+    }
+
+    rebirth() {
+        this.pastLevels += this.totalLevels
+        this.level = 0
+        this.xp = 0
+        this.maxXp = this.baseMaxXp
+    }
 }
 
 class BinaryXpObject extends GameObject {
@@ -617,10 +684,6 @@ class BinaryObject extends GameObject {
         this.updateRow()
     }
 
-    getXpGain(): number {
-        return this.applyEffects(10, EffectType.Speed)
-    }
-
     getValue(): number {
         return this.isUnlocked() ? 1 : 0
     }
@@ -671,8 +734,6 @@ class BinaryObject extends GameObject {
         } else {
             row!.getElementsByClassName("level")[0].textContent = "Offered"
         }
-
-        row!.getElementsByClassName("xpGain")[0].textContent = format(this.getXpGain())
 
         for (let r in this.affectMap.affects) {
             let receiverKey = r as Feature

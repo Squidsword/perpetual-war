@@ -63,7 +63,14 @@ const baseData = {
     [Unit.Clubsman]: {
         requirements: (): boolean => objects[Resource.Population].getValue() >= 10000,
         maxXp: 300,
-        cost: [Resource.Capital, 200] as [Resource, number]
+        cost: [Resource.Capital, 200] as [Resource, number],
+        levelUpEvent: () => {commanders[CommanderName.Player].enlist(BattleInfantry.Clubsman)},
+    },
+    [Unit.Slinger]: {
+        requirements: (): boolean => objects[Resource.Population].getValue() >= 10000,
+        maxXp: 300,
+        cost: [Resource.Capital, 500] as [Resource, number],
+        levelUpEvent: () => {commanders[CommanderName.Player].enlist(BattleRanged.Slinger)},
     }
 }
 
@@ -85,7 +92,8 @@ const objects = {
     [Research.Fences]: new BinaryXpObject(Research.Fences, baseData[Research.Fences]),
     [Research.Sheds]: new BinaryXpObject(Research.Sheds, baseData[Research.Sheds]),
 
-    [Unit.Clubsman]: new LevelObject(Unit.Clubsman, baseData[Unit.Clubsman])
+    [Unit.Clubsman]: new ConsumableObject(Unit.Clubsman, baseData[Unit.Clubsman]),
+    [Unit.Slinger]: new ConsumableObject(Unit.Slinger, baseData[Unit.Slinger])
 }
 
 const effectData = {
@@ -245,7 +253,7 @@ const metadata = {
             "headerData": {
                 "category": "Infantry",
                 "level": "Troops",
-                "effect": "Effect",
+                "effect": "Cost",
                 "xpGain": "Pace",
                 "xpLeft": "Remaining",
             },
@@ -259,13 +267,16 @@ const metadata = {
             [Info.Division]: Division.Military,
             "headerColor": "rgb(38, 136, 38)",
             "headerData": {
-                "category": "Agriculture",
-                "level": "Status",
-                "effect": "Effect",
+                "category": "Ranged",
+                "level": "Troops",
+                "effect": "Cost",
                 "xpGain": "Pace",
                 "xpLeft": "Remaining",
             },
         },
+            [Unit.Slinger]: {
+                [Info.Category]: MilitaryCategory.Ranged
+            },
 
         [MilitaryCategory.Cavalry]: {
             [Info.Division]: Division.Military,
