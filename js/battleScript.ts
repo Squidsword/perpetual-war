@@ -22,7 +22,7 @@ const baseStats = {
     },
     [BattleRanged.Slinger]: {
         [BattleInfo.Category]: MilitaryCategory.Ranged,
-        [BattleInfo.Health]: 5,
+        [BattleInfo.Health]: 1,
         [BattleInfo.Attack]: 2,
         [BattleInfo.Defense]: 0,
         [BattleInfo.Speed]: 1,
@@ -40,6 +40,15 @@ let battleObjects = [new InfantryObject(BattleInfantry.Clubsman, true, baseStats
 //     battleObjects.push(slinger)
 // }
 
+for (let i = 0; i < 50; i++) {
+    let slinger = new RangedObject(BattleRanged.Slinger, true, baseStats[BattleRanged.Slinger])
+    battleObjects.push(slinger)
+}
+
+for (let i = 0; i < 50; i++) {
+    let clubsman = new InfantryObject(BattleInfantry.Clubsman, false, baseStats[BattleInfantry.Clubsman])
+    battleObjects.push(clubsman)
+}
 
 
 function battleUpdate() {

@@ -72,6 +72,10 @@ abstract class BattleObject {
         return battleColors[this.category][this.ally ? 0 : 1]
     }
 
+    isAlive() {
+        return this.health > 0
+    }
+
     /**
      * Loops through the battleObjects and returns the closest enemy that is in range
      */
@@ -79,7 +83,7 @@ abstract class BattleObject {
         let closestEnemy = null
         let closestDistance = 1000
         for (let battleObject of battleObjects) {
-            if (battleObject.ally != this.ally) {
+            if (battleObject.ally != this.ally && battleObject.isAlive()) {
                 let distance = Math.abs(battleObject.x - this.x)
                 if (distance <= this.range && distance < closestDistance) {
                     closestDistance = distance
@@ -95,20 +99,20 @@ abstract class BattleObject {
     }
 
     receivePostmitigationDamage(damage: number) {
-        return this.health -= Math.max(0, damage - this.defense)
+        return this.receiveDamage(damage - this.defense)
     }
 
     inflictDamage(enemy: BattleObject, damage: number) {
         enemy.receivePostmitigationDamage(damage)
     }
 
+    inflictTrueDamage(enemy: BattleObject, damage: number) {
+        enemy.receiveDamage(damage)
+    }
+
     abstract retaliate(enemy: BattleObject, reflected: number): void
 
-    abstract getRetaliated(enemy: BattleObject, reflected: number): void
-
     abstract attackEnemy(enemy: BattleObject): void
-
-    abstract getAttackedByEnemy(enemy: BattleObject): void
 
 }
 
@@ -116,38 +120,23 @@ abstract class BattleObject {
 class InfantryObject extends BattleObject {
 
     attackEnemy(enemy: BattleObject): void {
-        enemy.getAttackedByEnemy(this)
-    }
-
-    getAttackedByEnemy(enemy: BattleObject): void {
-        this.receivePostmitigationDamage(enemy.attack)
-        this.retaliate(enemy, 0.5)
+        this.inflictDamage(enemy, this.attack)
+        enemy.retaliate(this, 0.5)
     }
 
     retaliate(enemy: BattleObject, reflected: number): void {
-        enemy.getRetaliated(this, reflected)
+        this.inflictTrueDamage(enemy, (this.attack - enemy.defense) * reflected)
     }
 
-    getRetaliated(enemy: BattleObject, reflected: number): void {
-        this.receiveDamage((enemy.attack - this.defense) * reflected)
-    }
 }
 
 class RangedObject extends BattleObject {
 
     attackEnemy(enemy: BattleObject): void {
-        enemy.getAttackedByEnemy(this)
-    }
-
-    getAttackedByEnemy(enemy: BattleObject): void {
-        this.health -= Math.max(0, enemy.attack - this.defense)
+        this.inflictDamage(enemy, this.attack)
     }
 
     retaliate(enemy: BattleObject): void {
-        return
-    }
-
-    getRetaliated(enemy: BattleObject, reflected: number): void {
         return
     }
 }
@@ -171,19 +160,11 @@ class CavalryObject extends BattleObject {
     }
 
     attackEnemy(enemy: BattleObject): void {
-        enemy.getAttackedByEnemy(this)
-    }
-
-    getAttackedByEnemy(enemy: BattleObject): void {
-        this.receivePostmitigationDamage(enemy.attack)
-        this.retaliate(enemy, 0.5)
+        this.inflictDamage(enemy, this.attack)
+        enemy.retaliate(this, 0.5)
     }
 
     retaliate(enemy: BattleObject, reflected: number): void {
-        enemy.getRetaliated(this, reflected)
-    }
-
-    getRetaliated(enemy: BattleObject, reflected: number): void {
-        this.receiveDamage((enemy.attack - this.defense) * reflected)
+        this.inflictTrueDamage(enemy, (this.attack - enemy.defense) * reflected)
     }
 }
