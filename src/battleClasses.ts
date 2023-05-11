@@ -31,7 +31,9 @@ class Commander {
             if (!battleClass) {
                 throw new Error("Invalid battle category")
             }
-            this.units.push(new battleClass(unit, this, battleBaseData[unit]))
+            let newUnit = new battleClass(unit, this.name, battleBaseData[unit])
+            this.units.push(newUnit)
+            return newUnit
         }
     }
 
@@ -51,19 +53,32 @@ class Commander {
 
     }
 
+    load(copyObj: any) {
+        if (copyObj.units != undefined) {
+            this.command = copyObj.command
+            this.temper = copyObj.temper
+            for (let u of copyObj.units) {
+                let loadedUnit = this.enlist(u.type)
+                loadedUnit?.load(u)
+            }
+        }
+        return false
+    }
+
 }
 
 abstract class BattleObject {
     type: BattleCategory
-    commander: Commander
+    commander: CommanderName
     category: MilitaryCategory
 
-    health: number
+    maxHealth: number
     attack: number
     defense: number
     range: number
     speed: number
 
+    health: number
     x: number
     y: number
 
@@ -79,9 +94,9 @@ abstract class BattleObject {
     aggressionRange: number
 
 
-    constructor(type: BattleCategory, commander: Commander, baseData: {
+    constructor(type: BattleCategory, commander: CommanderName, baseData: {
         [BattleInfo.Category]: MilitaryCategory
-        [BattleInfo.Health]: number
+        [BattleInfo.MaxHealth]: number
         [BattleInfo.Attack]: number
         [BattleInfo.AttackSpeed]: number
         [BattleInfo.Defense]: number
@@ -91,27 +106,41 @@ abstract class BattleObject {
         this.type = type
         this.commander = commander
         this.category = baseData[BattleInfo.Category]
-        this.health = baseData[BattleInfo.Health]
+        this.maxHealth = baseData[BattleInfo.MaxHealth]
+        this.health = this.maxHealth
         this.attack = baseData[BattleInfo.Attack]
         this.attackSpeed = baseData[BattleInfo.AttackSpeed]
         this.defense = baseData[BattleInfo.Defense]
         this.range = baseData[BattleInfo.Range]
         this.speed = baseData[BattleInfo.Speed]
-        this.x = commander.spawnPoint
+        this.x = commanders[commander].spawnPoint
         this.y = 0
         
         this.attackWindup = 0
         this.aggressionRange = 20
-        this.reactionTime = 0
+        this.reactionTime = 0.5
         this.reactionWindup = 0;
-        this.givenCommand = commander.command
+        this.givenCommand = commanders[commander].command
         this.variance = (Math.random() - 0.5)
         this.applyVariance()
     }
 
+    load(copyObj: any) {
+        if (copyObj.health != undefined) {
+            this.health = copyObj.health
+            this.x = copyObj.x
+            this.y = copyObj.y
+            this.attackWindup = copyObj.attackWindup
+            this.givenCommand = copyObj.givenCommand
+            this.reactionWindup = copyObj.reactionWindup
+            return true
+        }
+        return false
+    }
+
     update() {
-        if (this.health <= 0) {
-            this.commander.units.splice(this.commander.units.indexOf(this), 1)
+        if (this.maxHealth <= 0) {
+            commanders[this.commander].units.splice(commanders[this.commander].units.indexOf(this), 1)
             return
         }
         this.updateCommand()
@@ -120,13 +149,13 @@ abstract class BattleObject {
     }
 
     die() {
-        this.commander.units.splice(this.commander.units.indexOf(this), 1)
+        commanders[this.commander].units.splice(commanders[this.commander].units.indexOf(this), 1)
     }
 
     act() {
         if (this.isEnemyInAggressionRange(this.closestEnemy().enemy)) {
-            this.commander.temper = 0
-            this.commander.giveCommand(Command.Charge)
+            commanders[this.commander].temper = 0
+            commanders[this.commander].giveCommand(Command.Charge)
         }
         if (this.givenCommand == Command.Charge) {
             this.charge()
@@ -136,16 +165,17 @@ abstract class BattleObject {
     }
 
     applyVariance() {
-        this.y = Math.random() * 20
-        this.reactionTime += (Math.random())
         this.x += this.variance
+        this.y = this.variance * 20 + 10
+        this.reactionTime += this.variance
+
     }
 
     charge() {
         var closestEnemy = this.closestEnemy()
         this.attackWindup += applySpeed(this.attackSpeed)
         if (closestEnemy.enemy == null) {
-            if (this.commander.facingLeft) {
+            if (commanders[this.commander].facingLeft) {
                 if (this.reactionWindup >= this.reactionTime) {
                     this.advance()
                 } else {
@@ -169,7 +199,7 @@ abstract class BattleObject {
     hold() {
         let closestEnemy = this.closestEnemy()
         if (closestEnemy.enemy != null && this.isEnemyInAggressionRange(closestEnemy.enemy)) {
-            this.commander.temper = 0
+            commanders[this.commander].temper = 0
             return
         }
 
@@ -177,18 +207,18 @@ abstract class BattleObject {
     }
 
     updateCommand() {
-        if (this.commander.command == this.givenCommand) {
+        if (commanders[this.commander].command == this.givenCommand) {
             return
         }
         this.reactionWindup += applySpeed(1)
         if (this.reactionWindup >= this.reactionTime) {
             this.reactionWindup = 0
-            this.givenCommand = this.commander.command
+            this.givenCommand = commanders[this.commander].command
         }
     }
 
     recall() {
-        let diff = this.relativePosition() - this.commander.positioning[this.category] + this.variance
+        let diff = this.relativePosition() - commanders[this.commander].positioning[this.category] + this.variance
         if (Math.abs(diff) < 1) {
             return
         }
@@ -200,15 +230,15 @@ abstract class BattleObject {
     }
 
     relativePosition() {
-        return this.commander.facingLeft ? 100 - this.x : this.x
+        return commanders[this.commander].facingLeft ? 100 - this.x : this.x
     }
 
     advance() {
-        this.x += (this.commander.facingLeft ? -1 : 1) * applySpeed(this.speed)
+        this.x += (commanders[this.commander].facingLeft ? -1 : 1) * applySpeed(this.speed)
     }
 
     retreat() {
-        this.x -= (this.commander.facingLeft ? -1 : 1) * applySpeed(this.speed) * 0.7
+        this.x -= (commanders[this.commander].facingLeft ? -1 : 1) * applySpeed(this.speed) * 0.7
     }
 
     draw() {
@@ -216,11 +246,11 @@ abstract class BattleObject {
     }
 
     getColor() {
-        return this.commander.colors[this.category]
+        return commanders[this.commander].colors[this.category]
     }
 
     isAlive() {
-        return this.health > 0
+        return this.maxHealth > 0
     }
 
     isEnemyInRange(enemy: BattleObject | null) {
@@ -255,7 +285,7 @@ abstract class BattleObject {
         let closestDistance = 1000
         for (let cString in commanders) {
             let c = cString as CommanderName
-            if (c == this.commander.name) {
+            if (c == commanders[this.commander].name) {
                 continue
             }
             let commander = commanders[c]
@@ -271,7 +301,7 @@ abstract class BattleObject {
     }
 
     receiveDamage(damage: number) {
-        return this.health -= Math.max(0, damage)
+        return this.maxHealth -= Math.max(0, damage)
     }
 
     receivePostmitigationDamage(damage: number) {
@@ -290,6 +320,8 @@ abstract class BattleObject {
 
     abstract attackEnemy(enemy: BattleObject): void
 
+
+
 }
 
 
@@ -306,7 +338,7 @@ class InfantryObject extends BattleObject {
 
     applyVariance() {
         super.applyVariance()
-        this.range += Math.random() - 0.5
+        this.range += this.variance - 0.5
     }
 }
 
@@ -323,7 +355,7 @@ class RangedObject extends BattleObject {
     applyVariance() {
         super.applyVariance()
         this.range += (Math.random() - 0.5) * 2.5
-        this.commander.facingLeft ? this.x += 5 : this.x -= 5
+        commanders[this.commander].facingLeft ? this.x += 5 : this.x -= 5
     }
 }
 

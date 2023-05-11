@@ -1,6 +1,6 @@
 enum BattleInfo {
     Category = "CATEGORY",
-    Health = "HEALTH",
+    MaxHealth = "MAX_HEALTH",
     Attack = "ATTACK",
     AttackSpeed = "ATTACK_SPEED",
     Defense = "DEFENSE",

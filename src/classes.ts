@@ -158,14 +158,24 @@ class EffectMap {
 class ActionList {
     actions: [{func: Function, args: []}]
 
-    constructor(actions: [{func: Function, args: []}]) {
-        this.actions = actions
+    constructor(actions: [{func: Function, args: [] | any}] | {func: Function, args: [] | any}) {
+        if (!Array.isArray(actions)) {
+            this.actions = [actions]
+        } else {
+            this.actions = actions
+        }
+
     }
 
     executeActions() {
         for (let idx in this.actions) {
             let action = this.actions[idx]
-            action.func(...action.args)
+            if (!Array.isArray(action.args)) {
+                action.func(action.args)
+            } else {
+                action.func(...action.args)
+            }
+
         }
     }
 }
@@ -174,9 +184,16 @@ class GameEvent {
     actionList: ActionList
     requirements: Requirement
 
-    constructor(actionList: ActionList, requirements: Requirement) {
+    constructor(actionList: ActionList | {func: Function, args: [] | any}, requirements: Requirement | (() => boolean)) {
+        if (!(actionList instanceof ActionList)) {
+            actionList = new ActionList(actionList)
+        }
         this.actionList = actionList
-        this.requirements = requirements ? requirements : new Requirement()
+        if (requirements instanceof Requirement) {
+            this.requirements = requirements
+        } else {
+            this.requirements = new Requirement(requirements)
+        }
     }
 
     update() {

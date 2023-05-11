@@ -47,7 +47,7 @@ const commanders = {
 const battleBaseData = {
     [BattleInfantry.Clubsman]: {
         [BattleInfo.Category]: MilitaryCategory.Infantry,
-        [BattleInfo.Health]: 12,
+        [BattleInfo.MaxHealth]: 12,
         [BattleInfo.Attack]: 2,
         [BattleInfo.AttackSpeed]: 1.2,
         [BattleInfo.Defense]: 0,
@@ -56,7 +56,7 @@ const battleBaseData = {
     },
     [BattleRanged.Slinger]: {
         [BattleInfo.Category]: MilitaryCategory.Ranged,
-        [BattleInfo.Health]: 6,
+        [BattleInfo.MaxHealth]: 6,
         [BattleInfo.Attack]: 2,
         [BattleInfo.AttackSpeed]: 0.6,
         [BattleInfo.Defense]: 0,
@@ -65,7 +65,7 @@ const battleBaseData = {
     },
     [BattleCavalry.Scout]: {
         [BattleInfo.Category]: MilitaryCategory.Cavalry,
-        [BattleInfo.Health]: 6,
+        [BattleInfo.MaxHealth]: 6,
         [BattleInfo.Attack]: 2,
         [BattleInfo.AttackSpeed]: 1.0,
         [BattleInfo.Defense]: 0,
@@ -128,6 +128,17 @@ function simulateRandomBattle() {
             commanders[CommanderName.Enemy].enlist(BattleRanged.Slinger)
         } else {
             commanders[CommanderName.Enemy].enlist(BattleInfantry.Clubsman)
+        }
+    }
+}
+
+function sendWave(size: number) {
+    for (let i = 0; i < size; i++) {
+        let ranged = Math.random() < 0.5 ? true : false
+        if (ranged) {
+            commanders[CommanderName.Player].enlist(BattleRanged.Slinger)
+        } else {
+            commanders[CommanderName.Player].enlist(BattleInfantry.Clubsman)
         }
     }
 }

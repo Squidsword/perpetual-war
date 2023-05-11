@@ -96,6 +96,10 @@ const objects = {
     [Unit.Slinger]: new ConsumableObject(Unit.Slinger, baseData[Unit.Slinger])
 }
 
+const events = {
+    [EventName.SmallWave]: new GameEvent(new ActionList({func: sendWave, args: Math.floor(objects[Resource.Time].amount / 10)}), () => Math.floor(objects[Resource.Time].amount) % 30 == 0)
+}
+
 const effectData = {
     [Building.Crops]: {
         affects: [Resource.Population],
@@ -375,6 +379,7 @@ function update() {
     updateObjects()
     updateCategories()
     updateDivisions()
+    updateEvents()
     battleUpdate()
 }
 
@@ -482,6 +487,13 @@ function updateCategories() {
         } else {
             document.getElementById(c.toLowerCase())!.classList.add("hidden")
         }
+    }
+}
+
+function updateEvents() {
+    for (let keyString in events) {
+        let key = keyString as keyof typeof events
+        events[key].update()
     }
 }
 
@@ -649,18 +661,27 @@ function applySpeed(value: number): number {
 
 function save() {
     localStorage.setItem('gameObjects', JSON.stringify(objects))
+    localStorage.setItem('battleObjects', JSON.stringify(commanders))
 }
   
 function load() {
     let loadedData = localStorage.getItem('gameObjects') as string
-    if (!loadedData) {
-        return
+    if (loadedData) {
+        let loadedObjects = JSON.parse(loadedData)
+        for (let keyString in loadedObjects) {
+            let key = keyString as keyof typeof objects
+            objects[key].load(loadedObjects[keyString])
+        }
     }
-    let loadedObjects = JSON.parse(loadedData)
-    for (let keyString in loadedObjects) {
-        let key = keyString as keyof typeof objects
-        objects[key].load(loadedObjects[keyString])
+    let loadedBattleData = localStorage.getItem('battleObjects') as string
+    if (loadedBattleData) {
+        let loadedObjects = JSON.parse(loadedBattleData)
+        for (let keyString in loadedObjects) {
+            let key = keyString as keyof typeof commanders
+            commanders[key].load(loadedObjects[keyString])
+        }
     }
+
 }
 
 function resetGame() {

@@ -65,6 +65,11 @@ enum EffectType {
     Speed = "SPEED"
 }
 
+enum EventName {
+    SmallWave = "SMALL_WAVE",
+    BigWave = "BIG_WAVE",
+}
+
 type Category = EconomyCategory | TechnologyCategory | MilitaryCategory
 type General = Info | Division | Resource | Building | Augments | Research | Category | EffectType | Unit
 type Hierarchical = Division | Category | Research | Building | Unit
