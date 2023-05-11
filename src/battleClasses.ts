@@ -128,6 +128,7 @@ abstract class BattleObject {
         this.givenCommand = commanders[commander].command
         this.staticUniformVariance = Math.random()
         this.staticNormalVariance = drawNormal()
+        this.applyAdjustments()
     }
 
     load(copyObj: any) {
@@ -319,6 +320,10 @@ abstract class BattleObject {
         enemy.receiveDamage(damage)
     }
 
+    applyAdjustments() {
+
+    }
+
     abstract retaliate(enemy: BattleObject, reflected: number): void
 
     abstract attackEnemy(enemy: BattleObject): void
@@ -359,6 +364,11 @@ class RangedObject extends BattleObject {
         super.drawNewVariances()
         this.range += (this.staticUniformVariance - 0.5) * 2
     }
+
+    applyAdjustments() {
+        this.x += commanders[this.commander].facingLeft ? 8 : -8
+    }
+
 }
 
 class CavalryObject extends BattleObject {

@@ -156,9 +156,9 @@ class EffectMap {
 }
 
 class ActionList {
-    actions: [{func: Function, args: []}]
+    actions: [{func: Function, args: () => any}]
 
-    constructor(actions: [{func: Function, args: [] | any}] | {func: Function, args: [] | any}) {
+    constructor(actions: [{func: Function, args: () => any}] | {func: Function, args: () => any}) {
         if (!Array.isArray(actions)) {
             this.actions = [actions]
         } else {
@@ -170,21 +170,23 @@ class ActionList {
     executeActions() {
         for (let idx in this.actions) {
             let action = this.actions[idx]
-            if (!Array.isArray(action.args)) {
-                action.func(action.args)
+            let lazyArgs = action.args()
+            if (!Array.isArray(lazyArgs)) {
+                action.func(lazyArgs)
             } else {
-                action.func(...action.args)
+                action.func(...lazyArgs)
             }
 
         }
     }
 }
 
-class GameEvent {
+abstract class GameEvent {
     actionList: ActionList
     requirements: Requirement
 
-    constructor(actionList: ActionList | {func: Function, args: [] | any}, requirements: Requirement | (() => boolean)) {
+
+    constructor(actionList: ActionList | {func: Function, args: () => any}, requirements: Requirement | (() => boolean)) {
         if (!(actionList instanceof ActionList)) {
             actionList = new ActionList(actionList)
         }
@@ -199,7 +201,9 @@ class GameEvent {
     update() {
         if (this.requirements.isSatisfied()) {
             this.actionList.executeActions()
+            return true
         }
+        return false
     }
 
 }
@@ -208,7 +212,26 @@ class OneTimeEvent extends GameEvent {
     executed = false
     update() {
         if (!this.executed) {
-            super.update()
+            return super.update()
+        }
+        return false
+    }
+}
+
+class RecurringEvent extends GameEvent {
+    cooldown = 2
+    charge = 0
+
+    update() {
+        if (this.charge >= this.cooldown) {
+            if (super.update()) {
+                this.charge = 0
+                return true
+            }
+            return false
+        } else {
+            this.charge += applySpeed(1)
+            return false
         }
     }
 }
@@ -756,7 +779,7 @@ class BinaryObject extends GameObject {
             let receiverKey = r as Feature
             row!.getElementsByClassName("effect")[0].textContent = `${this.affectMap.getAffect(receiverKey).description()}`
         }
-
+        
         var bar = (row!.getElementsByClassName("progressFill")[0] as HTMLDivElement)
         bar.style.width = `${this.isUnlocked() ? 100 : 0}%`
         if (this.isUnlocked()) {

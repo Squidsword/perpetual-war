@@ -2,3 +2,4 @@
 *.map
 js/
 node_modules/
+.vscode

@@ -97,7 +97,7 @@ const objects = {
 }
 
 const events = {
-    [EventName.SmallWave]: new GameEvent(new ActionList({func: sendWave, args: Math.floor(objects[Resource.Time].amount / 10)}), () => Math.floor(objects[Resource.Time].amount) % 30 == 0)
+    [EventName.SmallWave]: new RecurringEvent({func: sendWave, args: () => {return Math.floor(Math.pow((objects[Resource.Time].amount - 60) / 30, 1.5))}}, () => Math.floor(objects[Resource.Time].amount) % 30 == 0 && Math.floor(objects[Resource.Time].amount) >= 90)
 }
 
 const effectData = {
