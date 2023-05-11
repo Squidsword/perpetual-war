@@ -65,6 +65,12 @@ class Commander {
         return false
     }
 
+    hardReset() {
+        this.units = []
+        this.temper = 0
+        this.command = Command.Hold
+    }
+
 }
 
 abstract class BattleObject {
@@ -82,13 +88,13 @@ abstract class BattleObject {
     x: number
     y: number
 
-    variance: number
+    staticUniformVariance: number
+    staticNormalVariance: number
 
     attackSpeed: number
     attackWindup: number
 
     givenCommand: Command
-    reactionTime: number
     reactionWindup: number
 
     aggressionRange: number
@@ -113,16 +119,15 @@ abstract class BattleObject {
         this.defense = baseData[BattleInfo.Defense]
         this.range = baseData[BattleInfo.Range]
         this.speed = baseData[BattleInfo.Speed]
-        this.x = commanders[commander].spawnPoint
-        this.y = 0
+        this.x = commanders[commander].spawnPoint + drawNormal()
+        this.y = Math.random() * 20 + 10
         
         this.attackWindup = 0
         this.aggressionRange = 20
-        this.reactionTime = 0.5
         this.reactionWindup = 0;
         this.givenCommand = commanders[commander].command
-        this.variance = (Math.random() - 0.5)
-        this.applyVariance()
+        this.staticUniformVariance = Math.random()
+        this.staticNormalVariance = drawNormal()
     }
 
     load(copyObj: any) {
@@ -164,11 +169,9 @@ abstract class BattleObject {
         }
     }
 
-    applyVariance() {
-        this.x += this.variance
-        this.y = this.variance * 20 + 10
-        this.reactionTime += this.variance
-
+    drawNewVariances() {
+        this.staticNormalVariance = drawNormal()
+        this.staticUniformVariance = Math.random()
     }
 
     charge() {
@@ -176,7 +179,7 @@ abstract class BattleObject {
         this.attackWindup += applySpeed(this.attackSpeed)
         if (closestEnemy.enemy == null) {
             if (commanders[this.commander].facingLeft) {
-                if (this.reactionWindup >= this.reactionTime) {
+                if (this.reactionWindup >= this.staticUniformVariance) {
                     this.advance()
                 } else {
                     this.reactionWindup += applySpeed(1)
@@ -211,15 +214,15 @@ abstract class BattleObject {
             return
         }
         this.reactionWindup += applySpeed(1)
-        if (this.reactionWindup >= this.reactionTime) {
+        if (this.reactionWindup >= this.staticUniformVariance) {
             this.reactionWindup = 0
             this.givenCommand = commanders[this.commander].command
         }
     }
 
     recall() {
-        let diff = this.relativePosition() - commanders[this.commander].positioning[this.category] + this.variance
-        if (Math.abs(diff) < 1) {
+        let diff = this.relativePosition() - commanders[this.commander].positioning[this.category] + this.staticNormalVariance / 1.5
+        if (Math.abs(diff) < 0.3) {
             return
         }
         if (diff < 0) {
@@ -320,8 +323,6 @@ abstract class BattleObject {
 
     abstract attackEnemy(enemy: BattleObject): void
 
-
-
 }
 
 
@@ -336,9 +337,10 @@ class InfantryObject extends BattleObject {
         this.inflictTrueDamage(enemy, (this.attack - enemy.defense) * reflected)
     }
 
-    applyVariance() {
-        super.applyVariance()
-        this.range += this.variance - 0.5
+    drawNewVariances() {
+        this.range -= (this.staticUniformVariance - 0.5) / 2
+        super.drawNewVariances()
+        this.range += (this.staticUniformVariance - 0.5) / 2
     }
 }
 
@@ -352,10 +354,10 @@ class RangedObject extends BattleObject {
         return
     }
 
-    applyVariance() {
-        super.applyVariance()
-        this.range += (Math.random() - 0.5) * 2.5
-        commanders[this.commander].facingLeft ? this.x += 5 : this.x -= 5
+    drawNewVariances() {
+        this.range -= (this.staticUniformVariance - 0.5) * 2
+        super.drawNewVariances()
+        this.range += (this.staticUniformVariance - 0.5) * 2
     }
 }
 

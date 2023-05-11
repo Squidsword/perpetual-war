@@ -84,9 +84,25 @@ function getClass(battleCategory: BattleCategory) {
     }
 }
 
+let varianceTimer = 0
+
 function battleUpdate() {
     clearCanvas()
     updateCommanders()
+    varianceTimer += applySpeed(1)
+    if (varianceTimer >= 8) {
+        updateVariances()
+        varianceTimer = 0
+    }
+}
+
+function updateVariances() {
+    for (let k in commanders) {
+        let objectKey = k as keyof typeof commanders
+        commanders[objectKey].units.forEach(unit => {
+            unit.drawNewVariances()
+        })
+    }
 }
 
 function updateCommanders() {
@@ -136,9 +152,9 @@ function sendWave(size: number) {
     for (let i = 0; i < size; i++) {
         let ranged = Math.random() < 0.5 ? true : false
         if (ranged) {
-            commanders[CommanderName.Player].enlist(BattleRanged.Slinger)
+            commanders[CommanderName.Enemy].enlist(BattleRanged.Slinger)
         } else {
-            commanders[CommanderName.Player].enlist(BattleInfantry.Clubsman)
+            commanders[CommanderName.Enemy].enlist(BattleInfantry.Clubsman)
         }
     }
 }

@@ -689,6 +689,10 @@ function resetGame() {
         let key = k as keyof typeof objects
         objects[key].hardReset()
     }
+    for (let k in commanders) {
+        let key = k as keyof typeof commanders
+        commanders[key].hardReset()
+    }
     selectBuilding(Building.Crops)
 }
 
