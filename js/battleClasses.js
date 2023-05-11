@@ -74,6 +74,7 @@ class BattleObject {
         this.givenCommand = commanders[commander].command;
         this.staticUniformVariance = Math.random();
         this.staticNormalVariance = drawNormal();
+        this.applyAdjustments();
     }
     load(copyObj) {
         if (copyObj.health != undefined) {
@@ -244,6 +245,8 @@ class BattleObject {
     inflictTrueDamage(enemy, damage) {
         enemy.receiveDamage(damage);
     }
+    applyAdjustments() {
+    }
 }
 class InfantryObject extends BattleObject {
     attackEnemy(enemy) {
@@ -270,6 +273,9 @@ class RangedObject extends BattleObject {
         this.range -= (this.staticUniformVariance - 0.5) * 2;
         super.drawNewVariances();
         this.range += (this.staticUniformVariance - 0.5) * 2;
+    }
+    applyAdjustments() {
+        this.x += commanders[this.commander].facingLeft ? 8 : -8;
     }
 }
 class CavalryObject extends BattleObject {

@@ -118,7 +118,7 @@ function drawCircle(x, y, radius, fill, stroke, strokeWidth) {
  * Debug purposes
  */
 function simulateRandomBattle() {
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 500; i++) {
         let ranged = Math.random() < 0.5 ? true : false;
         if (ranged) {
             commanders[CommanderName.Player].enlist(BattleRanged.Slinger);
@@ -127,7 +127,7 @@ function simulateRandomBattle() {
             commanders[CommanderName.Player].enlist(BattleInfantry.Clubsman);
         }
     }
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 500; i++) {
         let ranged = Math.random() < 0.5 ? true : false;
         if (ranged) {
             commanders[CommanderName.Enemy].enlist(BattleRanged.Slinger);
