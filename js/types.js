@@ -36,6 +36,7 @@ var Research;
 var Unit;
 (function (Unit) {
     Unit["Clubsman"] = "CLUBSMAN";
+    Unit["Slinger"] = "SLINGER";
 })(Unit || (Unit = {}));
 var Augments;
 (function (Augments) {
@@ -62,6 +63,11 @@ var EffectType;
     EffectType["Power"] = "POWER";
     EffectType["Speed"] = "SPEED";
 })(EffectType || (EffectType = {}));
+var EventName;
+(function (EventName) {
+    EventName["SmallWave"] = "SMALL_WAVE";
+    EventName["BigWave"] = "BIG_WAVE";
+})(EventName || (EventName = {}));
 function categoryValues() {
     return Object.values(EconomyCategory).concat(Object.values(TechnologyCategory)).concat(Object.values(MilitaryCategory));
 }

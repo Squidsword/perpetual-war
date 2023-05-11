@@ -2,7 +2,7 @@
 var BattleInfo;
 (function (BattleInfo) {
     BattleInfo["Category"] = "CATEGORY";
-    BattleInfo["Health"] = "HEALTH";
+    BattleInfo["MaxHealth"] = "MAX_HEALTH";
     BattleInfo["Attack"] = "ATTACK";
     BattleInfo["AttackSpeed"] = "ATTACK_SPEED";
     BattleInfo["Defense"] = "DEFENSE";

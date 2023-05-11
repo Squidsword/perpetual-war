@@ -118,25 +118,76 @@ class EffectMap {
 }
 class ActionList {
     constructor(actions) {
-        this.actions = actions;
+        if (!Array.isArray(actions)) {
+            this.actions = [actions];
+        }
+        else {
+            this.actions = actions;
+        }
     }
     executeActions() {
         for (let idx in this.actions) {
             let action = this.actions[idx];
-            action.func(...action.args);
+            let lazyArgs = action.args();
+            if (!Array.isArray(lazyArgs)) {
+                action.func(lazyArgs);
+            }
+            else {
+                action.func(...lazyArgs);
+            }
         }
     }
 }
 class GameEvent {
     constructor(actionList, requirements) {
-        this.executed = false;
+        if (!(actionList instanceof ActionList)) {
+            actionList = new ActionList(actionList);
+        }
         this.actionList = actionList;
-        this.requirements = requirements ? requirements : new Requirement();
+        if (requirements instanceof Requirement) {
+            this.requirements = requirements;
+        }
+        else {
+            this.requirements = new Requirement(requirements);
+        }
     }
-    execute() {
-        if (!this.executed && this.requirements.isSatisfied()) {
+    update() {
+        if (this.requirements.isSatisfied()) {
             this.actionList.executeActions();
-            this.executed = true;
+            return true;
+        }
+        return false;
+    }
+}
+class OneTimeEvent extends GameEvent {
+    constructor() {
+        super(...arguments);
+        this.executed = false;
+    }
+    update() {
+        if (!this.executed) {
+            return super.update();
+        }
+        return false;
+    }
+}
+class RecurringEvent extends GameEvent {
+    constructor() {
+        super(...arguments);
+        this.cooldown = 2;
+        this.charge = 0;
+    }
+    update() {
+        if (this.charge >= this.cooldown) {
+            if (super.update()) {
+                this.charge = 0;
+                return true;
+            }
+            return false;
+        }
+        else {
+            this.charge += applySpeed(1);
+            return false;
         }
     }
 }
@@ -250,6 +301,7 @@ class LevelObject extends GameObject {
         this.cost = baseData.cost;
         this.pastLevels = baseData.pastLevels ? baseData.pastLevels : 0;
         this.scaling = baseData.scaling ? baseData.scaling : () => 1;
+        this.levelUpEvent = baseData.levelUpEvent ? baseData.levelUpEvent : () => { };
     }
     update() {
         if (this.isUnlocked()) {
@@ -301,6 +353,7 @@ class LevelObject extends GameObject {
             this.xp -= this.maxXp;
             this.level += 1;
             this.maxXp = this.baseMaxXp * this.scaling(this.level);
+            this.levelUpEvent();
         }
     }
     updateRow() {
@@ -344,6 +397,43 @@ class LevelObject extends GameObject {
     }
     rebirth() {
         this.pastLevels += this.level;
+        this.level = 0;
+        this.xp = 0;
+        this.maxXp = this.baseMaxXp;
+    }
+}
+class ConsumableObject extends LevelObject {
+    constructor(type, baseData) {
+        super(type, baseData);
+        this.level = baseData.level ? baseData.level : 0;
+        this.totalLevels = baseData.totalLevels ? baseData.totalLevels : this.level;
+        this.xp = baseData.xp ? baseData.xp : 0;
+        this.baseMaxXp = baseData.maxXp;
+        this.maxXp = baseData.maxXp;
+        this.cost = baseData.cost;
+        this.pastLevels = baseData.pastLevels ? baseData.pastLevels : 0;
+        this.scaling = baseData.scaling ? baseData.scaling : () => 1;
+    }
+    getTotalLevels() {
+        return this.totalLevels;
+    }
+    consumeLevel() {
+        if (this.level > 0) {
+            this.level -= 1;
+            this.maxXp = this.baseMaxXp * this.scaling(this.level);
+        }
+    }
+    load(copyObj) {
+        super.load(copyObj);
+        this.totalLevels = copyObj.totalLevels ? copyObj.totalLevels : this.level;
+        return true;
+    }
+    hardReset() {
+        super.hardReset();
+        this.totalLevels = 0;
+    }
+    rebirth() {
+        this.pastLevels += this.totalLevels;
         this.level = 0;
         this.xp = 0;
         this.maxXp = this.baseMaxXp;
@@ -455,9 +545,6 @@ class BinaryObject extends GameObject {
     update() {
         this.updateRow();
     }
-    getXpGain() {
-        return this.applyEffects(10, EffectType.Speed);
-    }
     getValue() {
         return this.isUnlocked() ? 1 : 0;
     }
@@ -499,7 +586,6 @@ class BinaryObject extends GameObject {
         else {
             row.getElementsByClassName("level")[0].textContent = "Offered";
         }
-        row.getElementsByClassName("xpGain")[0].textContent = format(this.getXpGain());
         for (let r in this.affectMap.affects) {
             let receiverKey = r;
             row.getElementsByClassName("effect")[0].textContent = `${this.affectMap.getAffect(receiverKey).description()}`;

@@ -59,7 +59,14 @@ const baseData = {
     [Unit.Clubsman]: {
         requirements: () => objects[Resource.Population].getValue() >= 10000,
         maxXp: 300,
-        cost: [Resource.Capital, 200]
+        cost: [Resource.Capital, 200],
+        levelUpEvent: () => { commanders[CommanderName.Player].enlist(BattleInfantry.Clubsman); },
+    },
+    [Unit.Slinger]: {
+        requirements: () => objects[Resource.Population].getValue() >= 10000,
+        maxXp: 300,
+        cost: [Resource.Capital, 500],
+        levelUpEvent: () => { commanders[CommanderName.Player].enlist(BattleRanged.Slinger); },
     }
 };
 const objects = {
@@ -77,7 +84,11 @@ const objects = {
     [Research.SeedDiversity]: new BinaryXpObject(Research.SeedDiversity, baseData[Research.SeedDiversity]),
     [Research.Fences]: new BinaryXpObject(Research.Fences, baseData[Research.Fences]),
     [Research.Sheds]: new BinaryXpObject(Research.Sheds, baseData[Research.Sheds]),
-    [Unit.Clubsman]: new LevelObject(Unit.Clubsman, baseData[Unit.Clubsman])
+    [Unit.Clubsman]: new ConsumableObject(Unit.Clubsman, baseData[Unit.Clubsman]),
+    [Unit.Slinger]: new ConsumableObject(Unit.Slinger, baseData[Unit.Slinger])
+};
+const events = {
+    [EventName.SmallWave]: new RecurringEvent({ func: sendWave, args: () => { return Math.floor(Math.pow((objects[Resource.Time].amount - 60) / 30, 1.5)); } }, () => Math.floor(objects[Resource.Time].amount) % 30 == 0 && Math.floor(objects[Resource.Time].amount) >= 90)
 };
 const effectData = {
     [Building.Crops]: {
@@ -220,7 +231,7 @@ const metadata = {
         "headerData": {
             "category": "Infantry",
             "level": "Troops",
-            "effect": "Effect",
+            "effect": "Cost",
             "xpGain": "Pace",
             "xpLeft": "Remaining",
         },
@@ -232,12 +243,15 @@ const metadata = {
         [Info.Division]: Division.Military,
         "headerColor": "rgb(38, 136, 38)",
         "headerData": {
-            "category": "Agriculture",
-            "level": "Status",
-            "effect": "Effect",
+            "category": "Ranged",
+            "level": "Troops",
+            "effect": "Cost",
             "xpGain": "Pace",
             "xpLeft": "Remaining",
         },
+    },
+    [Unit.Slinger]: {
+        [Info.Category]: MilitaryCategory.Ranged
     },
     [MilitaryCategory.Cavalry]: {
         [Info.Division]: Division.Military,
@@ -315,6 +329,7 @@ function update() {
     updateObjects();
     updateCategories();
     updateDivisions();
+    updateEvents();
     battleUpdate();
 }
 function select(progression) {
@@ -407,6 +422,12 @@ function updateCategories() {
         else {
             document.getElementById(c.toLowerCase()).classList.add("hidden");
         }
+    }
+}
+function updateEvents() {
+    for (let keyString in events) {
+        let key = keyString;
+        events[key].update();
     }
 }
 function createHeaderRow(category) {
@@ -555,22 +576,34 @@ function applySpeed(value) {
 }
 function save() {
     localStorage.setItem('gameObjects', JSON.stringify(objects));
+    localStorage.setItem('battleObjects', JSON.stringify(commanders));
 }
 function load() {
     let loadedData = localStorage.getItem('gameObjects');
-    if (!loadedData) {
-        return;
+    if (loadedData) {
+        let loadedObjects = JSON.parse(loadedData);
+        for (let keyString in loadedObjects) {
+            let key = keyString;
+            objects[key].load(loadedObjects[keyString]);
+        }
     }
-    let loadedObjects = JSON.parse(loadedData);
-    for (let keyString in loadedObjects) {
-        let key = keyString;
-        objects[key].load(loadedObjects[keyString]);
+    let loadedBattleData = localStorage.getItem('battleObjects');
+    if (loadedBattleData) {
+        let loadedObjects = JSON.parse(loadedBattleData);
+        for (let keyString in loadedObjects) {
+            let key = keyString;
+            commanders[key].load(loadedObjects[keyString]);
+        }
     }
 }
 function resetGame() {
     for (let k in objects) {
         let key = k;
         objects[key].hardReset();
+    }
+    for (let k in commanders) {
+        let key = k;
+        commanders[key].hardReset();
     }
     selectBuilding(Building.Crops);
 }
